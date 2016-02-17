@@ -13,9 +13,11 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  // read cameras.xml
+  // read cameras.xml, get baseline
   std::shared_ptr<calibu::Rig<double>> rig =
     calibu::ReadXmlRig(argv[1]);
+  double baseline = (rig->cameras_[0]->Pose().translation() - rig->cameras_[1]->Pose().translation()).norm();
+  double focal_length = rig->cameras_[0]->GetParams()[0];
 
   // open stereo data
   hal::Camera camera(argv[2]);
@@ -28,7 +30,7 @@ int main(int argc, char *argv[])
 
   // instantiate ELAS
   Elas::parameters eparams;
-  eparams.postprocess_only_left = false;
+  eparams.postprocess_only_left = true;
   Elas elas(eparams);
 
   // start Pangolin, create displays
@@ -59,6 +61,8 @@ int main(int argc, char *argv[])
   float* D1_data = (float*)malloc(w*h*sizeof(float));
   float* D2_data = (float*)malloc(w*h*sizeof(float));
 
+  float max_d = 16;
+
   // main loop
   for (unsigned frame_number = 0; !pangolin::ShouldQuit(); frame_number++) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -68,14 +72,9 @@ int main(int argc, char *argv[])
       const unsigned char* r_img = (*imgs)[1]->data();
       elas.process(l_img, r_img, D1_data, D2_data, (const int *) dims);
 
-      float max_d = 0;
       for (uint i=0; i<w*h; i++) {
-        if (D1_data[i] > max_d) max_d = D1_data[i];
-        if (D2_data[i] > max_d) max_d = D2_data[i];
-      }
-      for (uint i=0; i<w*h; i++) {
+        D1_data[i] = baseline * focal_length / D1_data[i];
         D1_data[i] /= max_d;
-        D2_data[i] /= max_d;
       }
 
       l_view.SetImage(l_img, w, h, GL_INTENSITY, GL_LUMINANCE, GL_UNSIGNED_BYTE);
