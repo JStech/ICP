@@ -86,8 +86,8 @@ int main(int argc, char *argv[])
       for (uint i=0; i<w*h; i++) {
         D1_data[i] = baseline * focal_length / D1_data[i];
         if (true_depth) {
+          float e2 = (D1_data[i] - d_img[i])*(D1_data[i] - d_img[i]);
           if (e2 > max_e2) {
-            float e2 = (D1_data[i] - d_img[i])*(D1_data[i] - d_img[i]);
             max_e2 = e2;
           }
           d_img[i] /= max_d;
