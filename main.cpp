@@ -8,10 +8,12 @@
 int main(int argc, char *argv[])
 {
   // check arguments
-  if (argc != 3) {
-    std::cout << "Usage: " << argv[0] << " /path/to/cameras.xml 'scheme:///path/to/stereo/data'" << std::endl;
+  if (argc != 4) {
+    std::cout << "Usage: " << argv[0] << " /path/to/cameras.xml 'scheme:///path/to/stereo/data' <max depth>" << std::endl;
     return 1;
   }
+
+  float max_d = atof(argv[3]);
 
   // read cameras.xml, get baseline
   std::shared_ptr<calibu::Rig<double>> rig =
@@ -27,6 +29,11 @@ int main(int argc, char *argv[])
   }
   const unsigned w = camera.Width();
   const unsigned h = camera.Height();
+
+  bool true_depth = false;
+  if (camera.NumChannels() == 3) {
+    true_depth = true;
+  }
 
   // instantiate ELAS
   Elas::parameters eparams;
@@ -61,29 +68,43 @@ int main(int argc, char *argv[])
   float* D1_data = (float*)malloc(w*h*sizeof(float));
   float* D2_data = (float*)malloc(w*h*sizeof(float));
 
-  float max_d = 16;
+  float max_e2 = 0;
 
   // main loop
   for (unsigned frame_number = 0; !pangolin::ShouldQuit(); frame_number++) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (camera.Capture(*imgs)) {
+      float* d_img;
       const unsigned char* l_img = (*imgs)[0]->data();
       const unsigned char* r_img = (*imgs)[1]->data();
+      if (true_depth) {
+        d_img = (float*) (*imgs)[2]->data();
+      }
       elas.process(l_img, r_img, D1_data, D2_data, (const int *) dims);
 
       for (uint i=0; i<w*h; i++) {
         D1_data[i] = baseline * focal_length / D1_data[i];
+        if (true_depth) {
+          float e2 = (D1_data[i] - d_img[i])*(D1_data[i] - d_img[i]);
+          if (e2 > max_e2) {
+            max_e2 = e2;
+          }
+          d_img[i] /= max_d;
+        }
         D1_data[i] /= max_d;
       }
 
       l_view.SetImage(l_img, w, h, GL_INTENSITY, GL_LUMINANCE, GL_UNSIGNED_BYTE);
       r_view.SetImage(r_img, w, h, GL_INTENSITY, GL_LUMINANCE, GL_UNSIGNED_BYTE);
       dl_view.SetImage(D1_data, w, h, GL_INTENSITY, GL_LUMINANCE, GL_FLOAT);
-      dr_view.SetImage(D2_data, w, h, GL_INTENSITY, GL_LUMINANCE, GL_FLOAT);
+      if (true_depth) {
+        dr_view.SetImage(d_img, w, h, GL_INTENSITY, GL_LUMINANCE, GL_FLOAT);
+      }
     }
     pangolin::FinishFrame();
   }
+  std::cout << max_e2 << std::endl;
 
   return 0;
 }
