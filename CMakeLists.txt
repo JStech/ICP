@@ -18,6 +18,7 @@ find_package(SceneGraph REQUIRED)
 include_directories( ${Calibu_INCLUDE_DIRS} )
 include_directories( ${HAL_INCLUDE_DIRS} )
 include_directories( ${Pangolin_INCLUDE_DIRS} )
+include_directories( ${SceneGraph_INCLUDE_DIRS} )
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/libelas/include )
 
 target_link_libraries( plot_pc
