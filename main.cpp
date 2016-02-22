@@ -70,6 +70,11 @@ int main(int argc, char *argv[])
 
   float max_e2 = 0;
 
+  FILE* pcf = fopen("point_cloud.bin", "wb");
+
+  Eigen::Vector2d pixel;
+  Eigen::Vector3d point;
+
   // main loop
   for (unsigned frame_number = 0; !pangolin::ShouldQuit(); frame_number++) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -101,9 +106,29 @@ int main(int argc, char *argv[])
       if (true_depth) {
         dr_view.SetImage(d_img, w, h, GL_INTENSITY, GL_LUMINANCE, GL_FLOAT);
       }
+
+      float p[3];
+      for (unsigned i=0; i<h*w; i++) {
+        if (D1_data[i] < 0) continue;
+        // unproject depth
+        pixel(0) = (float) (i/w);
+        pixel(1) = (float) (i%w);
+        point = D1_data[i] * rig->cameras_[0]->Unproject(pixel);
+
+        // append to point cloud
+        // TODO: do this more efficiently
+        p[0] = point(0);
+        p[1] = point(1);
+        p[2] = point(2);
+        fwrite(p, sizeof(float), 3, pcf);
+        std::cout << p[0] << " " << p[1] << " " << p[2] << std::endl;
+      }
+      p[0] = p[1] = p[2] = 0;
+      fwrite(p, sizeof(float), 3, pcf);
     }
     pangolin::FinishFrame();
   }
+  fclose(pcf);
   std::cout << max_e2 << std::endl;
 
   return 0;
