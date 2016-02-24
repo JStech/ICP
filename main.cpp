@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
   // instantiate ELAS
   Elas::parameters eparams;
   eparams.postprocess_only_left = true;
+  std::cout << eparams << std::endl;
   Elas elas(eparams);
 
   // start Pangolin, create displays
@@ -121,7 +122,6 @@ int main(int argc, char *argv[])
         p[1] = point(1);
         p[2] = point(2);
         fwrite(p, sizeof(float), 3, pcf);
-        std::cout << p[0] << " " << p[1] << " " << p[2] << std::endl;
       }
       p[0] = p[1] = p[2] = 0;
       fwrite(p, sizeof(float), 3, pcf);

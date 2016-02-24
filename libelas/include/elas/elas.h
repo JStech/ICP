@@ -233,4 +233,30 @@ private:
 #endif
 };
 
+std::ostream &operator<<(std::ostream &os, Elas::parameters const &p) {
+  return os <<
+    "disp_min              " << p.disp_min              << std::endl <<
+    "disp_max              " << p.disp_max              << std::endl <<
+    "support_threshold     " << p.support_threshold     << std::endl <<
+    "support_texture       " << p.support_texture       << std::endl <<
+    "candidate_stepsize    " << p.candidate_stepsize    << std::endl <<
+    "incon_window_size     " << p.incon_window_size     << std::endl <<
+    "incon_threshold       " << p.incon_threshold       << std::endl <<
+    "incon_min_support     " << p.incon_min_support     << std::endl <<
+    "add_corners           " << p.add_corners           << std::endl <<
+    "grid_size             " << p.grid_size             << std::endl <<
+    "beta                  " << p.beta                  << std::endl <<
+    "gamma                 " << p.gamma                 << std::endl <<
+    "sigma                 " << p.sigma                 << std::endl <<
+    "sradius               " << p.sradius               << std::endl <<
+    "match_texture         " << p.match_texture         << std::endl <<
+    "lr_threshold          " << p.lr_threshold          << std::endl <<
+    "speckle_sim_threshold " << p.speckle_sim_threshold << std::endl <<
+    "speckle_size          " << p.speckle_size          << std::endl <<
+    "ipol_gap_width        " << p.ipol_gap_width        << std::endl <<
+    "filter_median         " << p.filter_median         << std::endl <<
+    "filter_adaptive_mean  " << p.filter_adaptive_mean  << std::endl <<
+    "postprocess_only_left " << p.postprocess_only_left << std::endl <<
+    "subsampling           " << p.subsampling           << std::endl;
+}
 #endif

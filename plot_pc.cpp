@@ -63,7 +63,6 @@ int main(int argc, char *argv[])
         rv = fread(point, sizeof(float), 3, pcf);
       }
       if (num_points == 0) break;
-      std::cout << num_points << std::endl;
       step = false;
     }
 
