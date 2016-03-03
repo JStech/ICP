@@ -2,7 +2,9 @@
 #include <SceneGraph/SceneGraph.h>
 #include <calibu/Calibu.h>
 #include <iostream>
+#include <iomanip>
 #include <pangolin/pangolin.h>
+#include <cmath>
 
 int main(int argc, char *argv[])
 {
@@ -15,6 +17,7 @@ int main(int argc, char *argv[])
   // read cameras.xml, get baseline
   std::shared_ptr<calibu::Rig<double>> rig =
     calibu::ReadXmlRig(argv[1]);
+  float focal_length = rig->cameras_[1]->GetParams()[0];
 
   // open image data
   hal::Camera camera(argv[2]);
@@ -42,7 +45,7 @@ int main(int argc, char *argv[])
   // memory stuff
   std::shared_ptr<hal::ImageArray> imgs = hal::ImageArray::Create();
 
-  //FILE* pcf = fopen("point_cloud.bin", "wb");
+  FILE* pcf = fopen("point_cloud.bin", "wb");
 
   Eigen::Vector2d pixel;
   Eigen::Vector3d point;
@@ -53,19 +56,22 @@ int main(int argc, char *argv[])
 
     if (camera.Capture(*imgs)) {
       const unsigned char* v_img = (*imgs)[0]->data();
-      const float* d_img = (float*) (*imgs)[1]->data();
+      const unsigned short* d_img = (unsigned short*) (*imgs)[1]->data();
 
       video_view.SetImage(v_img, w, h);
       depth_view.SetImage(d_img, w, h, GL_LUMINANCE, GL_LUMINANCE, GL_UNSIGNED_SHORT);
 
-      /*
       float p[3];
       for (unsigned i=0; i<h*w; i++) {
-        if (D1_data[i] < 0) continue;
+        if (d_img[i] == 0) continue;
         // unproject depth
         pixel(0) = (float) (i/w);
         pixel(1) = (float) (i%w);
-        point = D1_data[i] * rig->cameras_[0]->Unproject(pixel);
+        float depth = 2.7 * d_img[i] / (1<<16) + 0.8;
+        depth *= std::sqrt(focal_length*focal_length + (i/w - h/2)*(i/w - h/2)
+            + (i%w - w/2)*(i%w - w/2));
+        depth /= 10.;
+        point = depth * rig->cameras_[1]->Unproject(pixel);
 
         // append to point cloud
         // TODO: do this more efficiently
@@ -76,11 +82,10 @@ int main(int argc, char *argv[])
       }
       p[0] = p[1] = p[2] = 0;
       fwrite(p, sizeof(float), 3, pcf);
-      */
     }
     pangolin::FinishFrame();
   }
-  //fclose(pcf);
+  fclose(pcf);
 
   return 0;
 }
