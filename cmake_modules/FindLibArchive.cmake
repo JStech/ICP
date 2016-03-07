@@ -36,7 +36,10 @@ find_library(LibArchive_LIBRARY
   NAMES archive libarchive
   PATHS
   "/usr/local/opt/libarchive/lib"
-  )
+  NO_CMAKE_PATH
+  NO_CMAKE_ENVIRONMENT_PATH
+  NO_SYSTEM_ENVIRONMENT_PATH
+  NO_CMAKE_SYSTEM_PATH)
 
 mark_as_advanced(LibArchive_INCLUDE_DIR LibArchive_LIBRARY)
 
