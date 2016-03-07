@@ -11,7 +11,6 @@
 #include <pcl/point_types.h>
 #define BUFF_SZ 8192
 
-template <typename T>
 class PointSky {
     struct archive *a;
     struct archive_entry *e;
@@ -19,10 +18,10 @@ class PointSky {
     int n;
   public:
     // create a sky
-    PointSky(char *filename): filename(filename), a(NULL), e(NULL), n(0) {}
+    PointSky(const char fn[]): a(NULL), e(NULL), filename(fn), n(0) {}
 
     // add a cloud to the sky
-    void WriteCloud(typename pcl::PointCloud<T>::Ptr cloud) {
+    void WriteCloud(pcl::PointCloud<pcl::PointXYZ> cloud) {
       char buff[BUFF_SZ]; char tmpfilename[L_tmpnam];
 
       // create new archive and entry if necessary
@@ -43,12 +42,12 @@ class PointSky {
       pcl::io::savePCDFileBinary(tmpfilename, cloud);
 
       // generate filename, file attributes for archive
-      snprintf(buff, BUFF_SZ, "%d.pcd", n);
+      snprintf(buff, BUFF_SZ, "sky/%d.pcd", n);
       n++;
       archive_entry_set_pathname(e, buff);
       struct stat st;
       stat(tmpfilename, &st);
-      archive_entry_copy_stat(e, st);
+      archive_entry_copy_stat(e, &st);
       archive_entry_set_filetype(e, AE_IFREG);
       archive_entry_set_perm(e, 0644);
       archive_write_header(a, e);
@@ -65,6 +64,13 @@ class PointSky {
 
       archive_entry_clear(e);
       return;
+    }
+
+    // finish and close
+    void Close() {
+      archive_write_close(a);
+      archive_write_free(a);
+      archive_entry_free(e);
     }
 };
 
@@ -107,10 +113,16 @@ int main(int argc, char *argv[])
   // memory stuff
   std::shared_ptr<hal::ImageArray> imgs = hal::ImageArray::Create();
 
-  FILE* pcf = fopen("point_cloud.bin", "wb");
-
   Eigen::Vector2d pixel;
   Eigen::Vector3d point;
+
+  pcl::PointCloud<pcl::PointXYZ> cloud;
+  cloud.width = w*h;
+  cloud.height = 1;
+  cloud.is_dense = false;
+  cloud.points.resize(w*h);
+
+  PointSky sky("point_sky.tar.gz");
 
   // main loop
   for (unsigned frame_number = 0; !pangolin::ShouldQuit(); frame_number++) {
@@ -123,9 +135,12 @@ int main(int argc, char *argv[])
       video_view.SetImage(v_img, w, h);
       depth_view.SetImage(d_img, w, h, GL_LUMINANCE, GL_LUMINANCE, GL_UNSIGNED_SHORT);
 
-      float p[3];
       for (unsigned i=0; i<h*w; i++) {
-        if (d_img[i] == 0) continue;
+        if (d_img[i] == 0) {
+          cloud.points[i].x = cloud.points[i].y = cloud.points[i].z =
+            std::numeric_limits<float>::quiet_NaN();
+          continue;
+        }
         // unproject depth
         pixel(0) = (float) (i/w);
         pixel(1) = (float) (i%w);
@@ -136,18 +151,15 @@ int main(int argc, char *argv[])
         point = depth * rig->cameras_[1]->Unproject(pixel);
 
         // append to point cloud
-        // TODO: do this more efficiently
-        p[0] = point(0);
-        p[1] = point(1);
-        p[2] = point(2);
-        fwrite(p, sizeof(float), 3, pcf);
+        cloud.points[i].x = point(0);
+        cloud.points[i].y = point(1);
+        cloud.points[i].z = point(2);
       }
-      p[0] = p[1] = p[2] = 0;
-      fwrite(p, sizeof(float), 3, pcf);
+      sky.WriteCloud(cloud);
     }
     pangolin::FinishFrame();
   }
-  fclose(pcf);
+  sky.Close();
 
   return 0;
 }
