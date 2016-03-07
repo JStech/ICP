@@ -1,10 +1,72 @@
 #include <HAL/Camera/CameraDevice.h>
 #include <SceneGraph/SceneGraph.h>
+#include <archive.h>
+#include <archive_entry.h>
 #include <calibu/Calibu.h>
-#include <iostream>
-#include <iomanip>
-#include <pangolin/pangolin.h>
 #include <cmath>
+#include <iomanip>
+#include <iostream>
+#include <pangolin/pangolin.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#define BUFF_SZ 8192
+
+template <typename T>
+class PointSky {
+    struct archive *a;
+    struct archive_entry *e;
+    const char *filename;
+    int n;
+  public:
+    // create a sky
+    PointSky(char *filename): filename(filename), a(NULL), e(NULL), n(0) {}
+
+    // add a cloud to the sky
+    void WriteCloud(typename pcl::PointCloud<T>::Ptr cloud) {
+      char buff[BUFF_SZ]; char tmpfilename[L_tmpnam];
+
+      // create new archive and entry if necessary
+      if (a==NULL) {
+        a = archive_write_new();
+        archive_write_add_filter_gzip(a);
+        archive_write_set_format_ustar(a);
+        archive_write_open_filename(a, filename);
+      }
+      if (e==NULL) {
+        e = archive_entry_new();
+      }
+
+      // write point cloud to temporary file
+      if (NULL == tmpnam(tmpfilename)) {
+        exit(1);
+      }
+      pcl::io::savePCDFileBinary(tmpfilename, cloud);
+
+      // generate filename, file attributes for archive
+      snprintf(buff, BUFF_SZ, "%d.pcd", n);
+      n++;
+      archive_entry_set_pathname(e, buff);
+      struct stat st;
+      stat(tmpfilename, &st);
+      archive_entry_copy_stat(e, st);
+      archive_entry_set_filetype(e, AE_IFREG);
+      archive_entry_set_perm(e, 0644);
+      archive_write_header(a, e);
+
+      // read data and write to archive
+      FILE* f = fopen(tmpfilename, "rb");
+      int len = fread(buff, 1, BUFF_SZ, f);
+      while (len > 0) {
+        archive_write_data(a, buff, len);
+        len = fread(buff, 1, BUFF_SZ, f);
+      }
+      fclose(f);
+      remove(tmpfilename);
+
+      archive_entry_clear(e);
+      return;
+    }
+};
 
 int main(int argc, char *argv[])
 {
