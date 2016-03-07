@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
         // unproject depth
         pixel(0) = (float) (i/w);
         pixel(1) = (float) (i%w);
-        float depth = 2.7 * d_img[i] / (1<<16) + 0.8;
+        float depth = d_img[i] / 10000.0;
         depth *= std::sqrt(focal_length*focal_length + (i/w - h/2)*(i/w - h/2)
             + (i%w - w/2)*(i%w - w/2));
         depth /= 10.;
