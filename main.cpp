@@ -11,18 +11,72 @@
 #include <pcl/point_types.h>
 #define BUFF_SZ 8192
 
-class PointSky {
+class PointSkyReader {
+    struct archive *a;
+    struct archive_entry *e;
+    const char *filename;
+    int n;
+
+  public:
+    PointSkyReader(const char fn[]): a(NULL), e(NULL), filename(fn), n(0) {
+
+      // open file
+      a = archive_read_new();
+      archive_read_support_filter_all(a);
+      archive_read_support_format_all(a);
+      archive_read_support_compression_all(a);
+      int r = archive_read_open_filename(a, filename, 10240);
+      if (r != ARCHIVE_OK) {
+        std::cerr << "Can't open file " << filename << std::endl;
+        exit(1);
+      }
+
+    }
+
+    // read clouds
+    pcl::PointCloud<pcl::PointXYZ>::Ptr ReadNext() {
+      char tmpfilename[L_tmpnam];
+
+      if (archive_read_next_header(a, &e) != ARCHIVE_OK) {
+        return NULL;
+      }
+
+      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud
+        (new pcl::PointCloud<pcl::PointXYZ>);
+      if (NULL == tmpnam(tmpfilename)) {
+        exit(1);
+      }
+      int tmpfd = open(tmpfilename, O_RDONLY);
+      if (archive_read_data_into_fd(a, tmpfd) != ARCHIVE_OK) {
+        std::cerr << "Error unpacking cloud." << std::endl;
+        close(tmpfd);
+        std::remove(tmpfilename);
+        exit(1);
+      }
+      close(tmpfd);
+      if (pcl::io::loadPCDFile<pcl::PointXYZ>(tmpfilename, *cloud) == -1) {
+        std::cerr << "Error reading cloud." << std::endl;
+        std::remove(tmpfilename);
+        exit(1);
+      }
+      std::remove(tmpfilename);
+      return cloud;
+    }
+};
+
+class PointSkyWriter {
     struct archive *a;
     struct archive_entry *e;
     const char *filename;
     int n;
   public:
     // create a sky
-    PointSky(const char fn[]): a(NULL), e(NULL), filename(fn), n(0) {}
+    PointSkyWriter(const char fn[]): a(NULL), e(NULL), filename(fn), n(0) {}
 
     // add a cloud to the sky
     void WriteCloud(pcl::PointCloud<pcl::PointXYZ> cloud) {
-      char buff[BUFF_SZ]; char tmpfilename[L_tmpnam];
+      char buff[BUFF_SZ];
+      char tmpfilename[L_tmpnam];
 
       // create new archive and entry if necessary
       if (a==NULL) {
@@ -122,7 +176,7 @@ int main(int argc, char *argv[])
   cloud.is_dense = false;
   cloud.points.resize(w*h);
 
-  PointSky sky("point_sky.tar.gz");
+  PointSkyWriter sky("point_sky.tar.gz");
 
   // main loop
   for (unsigned frame_number = 0; !pangolin::ShouldQuit(); frame_number++) {

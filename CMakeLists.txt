@@ -6,9 +6,6 @@ set(CMAKE_PREFIX_PATH /usr/local/opt/libarchive ${CMAKE_PREFIX_PATH})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
 
-#set(LibArchive_INCLUDE_DIR /usr/local/opt/libarchive/include)
-#set(LibArchive_LIBRARY_DIR /usr/local/opt/libarchive/lib)
-
 add_executable( icp main.cpp )
 add_executable( plot_pc plot_pc.cpp )
 
