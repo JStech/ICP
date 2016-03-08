@@ -5,8 +5,8 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
 
-add_executable( make_pc make_pc.cpp )
-add_executable( plot_pc plot_pc.cpp )
+add_executable( make_pc src/make_pc.cpp )
+add_executable( plot_pc src/plot_pc.cpp )
 
 find_package(Calibu REQUIRED)
 find_package(HAL REQUIRED)
