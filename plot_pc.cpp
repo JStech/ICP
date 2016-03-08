@@ -1,6 +1,8 @@
 #include <SceneGraph/SceneGraph.h>
 #include <pangolin/pangolin.h>
 #include <iostream>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
 
 #define W 1024
 #define H 768
@@ -13,10 +15,14 @@ int main(int argc, char *argv[])
   }
 
   // open point cloud file
-  FILE* pcf = fopen(argv[1], "rb");
-
-  float point[3];
-  int rv;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+  if (pcl::io::loadPCDFile<pcl::PointXYZ>(argv[1], *cloud) == -1) {
+    std::cerr << "Error reading file " << argv[1] << std::endl;
+    exit(1);
+  }
+  std::cerr << "Read " << cloud->height << " clouds of " << cloud->width <<
+    " points." << std::endl;
+  uint32_t cloud_n = 0;
 
   // start pangolin
   pangolin::CreateWindowAndBind("Main", W, H);
@@ -53,21 +59,16 @@ int main(int argc, char *argv[])
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glColor4f(1.0f,1.0f,1.0f,1.0f);
 
-    if (step) {
+    if (step && cloud_n < cloud->height) {
       glPC.Clear();
-      rv = fread(point, sizeof(float), 3, pcf);
-      uint32_t num_points = 0;
-      while (rv==3 && (point[0] != 0. || point[1] != 0. || point[2] != 0.)) {
-        glPC.AddVertex(Eigen::Vector3d(point[0], point[1], point[2]));
-        num_points++;
-        rv = fread(point, sizeof(float), 3, pcf);
+      for (uint32_t i = cloud_n*cloud->width; i<(cloud_n+1)*cloud->width; i++){
+        glPC.AddVertex(Eigen::Vector3d(cloud->points[i].x, cloud->points[i].y,
+              cloud->points[i].z));
       }
-      if (num_points == 0) break;
+      cloud_n++;
       step = false;
     }
 
     pangolin::FinishFrame();
   }
-
-  fclose(pcf);
 }
