@@ -5,7 +5,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
 
-add_executable( icp main.cpp )
+add_executable( make_pc make_pc.cpp )
 add_executable( plot_pc plot_pc.cpp )
 
 find_package(Calibu REQUIRED)
@@ -21,14 +21,13 @@ include_directories( ${SceneGraph_INCLUDE_DIRS} )
 include_directories( ${PCL_INCLUDE_DIRS} )
 
 target_link_libraries( plot_pc
-  ${Calibu_LIBRARIES}
   ${HAL_LIBRARIES}
   ${Pangolin_LIBRARIES}
   ${SceneGraph_LIBRARIES}
   ${PCL_LIBRARIES}
   )
 
-target_link_libraries( icp
+target_link_libraries( make_pc
   ${Calibu_LIBRARIES}
   ${HAL_LIBRARIES}
   ${Pangolin_LIBRARIES}
