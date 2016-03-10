@@ -7,6 +7,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
 
 add_executable( make_pc src/make_pc.cpp )
 add_executable( plot_pc src/plot_pc.cpp )
+add_executable( dualquat_test tests/dualquat_test.cpp )
 
 find_package(Calibu REQUIRED)
 find_package(HAL REQUIRED)
@@ -19,6 +20,7 @@ include_directories( ${HAL_INCLUDE_DIRS} )
 include_directories( ${Pangolin_INCLUDE_DIRS} )
 include_directories( ${SceneGraph_INCLUDE_DIRS} )
 include_directories( ${PCL_INCLUDE_DIRS} )
+include_directories( "include" )
 
 target_link_libraries( plot_pc
   ${HAL_LIBRARIES}
