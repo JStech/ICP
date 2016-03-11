@@ -90,7 +90,4 @@ class DualQuat {
     }
 };
 
-template class Quat<float>;
-template class DualQuat<float>;
-
 #endif // DUALQUAT_H

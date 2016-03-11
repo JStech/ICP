@@ -82,5 +82,8 @@ bool Quat<T>::operator==(const Quat<T>& rhs) const {
 
 template <typename T>
 bool Quat<T>::operator!=(const Quat<T>& rhs) const {
-  return !(this == rhs);
+  return !(*this == rhs);
 }
+
+template class Quat<float>;
+template class DualQuat<float>;
