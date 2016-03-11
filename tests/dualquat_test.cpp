@@ -115,5 +115,6 @@ int main(int argc, char* argv[]) {
     std::cout << ":-D normalization test passed" << std::endl;
   if ((B - E).realMagnitude() > epsilon)
     std::cout << ":-( normalization test failed" << std::endl;
+
   return 0;
 }

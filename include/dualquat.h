@@ -6,15 +6,17 @@ template <typename T>
 class Quat {
   public:
     union {
-      T data[4];
+      T vector[4];
       struct {
-        T w; T x; T y; T z;
+        T x; T y; T z; T w;
       };
     };
 
-    Quat(){};
+    Quat() {};
     Quat(T w, T x, T y, T z) :
-      w(w), x(x), y(y), z(z) {}
+      x(x), y(y), z(z), w(w) {}
+    Quat(T vector[4]) :
+      x(vector[0]), y(vector[1]), z(vector[2]), w(vector[3]) {}
 
     Quat& operator+=(const Quat& rhs) {
       this->w += rhs.w; this->x += rhs.x; this->y += rhs.y; this->z += rhs.z;
