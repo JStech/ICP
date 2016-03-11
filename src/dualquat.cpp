@@ -75,12 +75,12 @@ std::ostream& operator<<(std::ostream& os, const Quat<T>& rhs) {
 }
 
 template <typename T>
-bool Quat<T>::operator==(const Quat<T>& rhs) {
+bool Quat<T>::operator==(const Quat<T>& rhs) const {
   return (this->w == rhs.w) && (this->x == rhs.x) &&
     (this->y == rhs.y) && (this->z == rhs.z);
 }
 
 template <typename T>
-bool Quat<T>::operator!=(const Quat<T>& rhs) {
+bool Quat<T>::operator!=(const Quat<T>& rhs) const {
   return !(this == rhs);
 }

@@ -12,18 +12,18 @@ class Quat {
       };
     };
 
-    Quat() {};
-    Quat(T w, T x, T y, T z) : w(w), x(x), y(y), z(z) {};
+    Quat() {}
+    Quat(T w, T x, T y, T z) : w(w), x(x), y(y), z(z) {}
 
     Quat& operator+=(const Quat& rhs);
     Quat& operator-=(const Quat& rhs);
     Quat& operator*=(const Quat& rhs);
     Quat& operator/=(const Quat& rhs);
     Quat operator-() const;
-    Quat operator+(const Quat& rhs) const;
-    Quat operator-(const Quat& rhs) const;
-    Quat operator*(const Quat& rhs) const;
-    Quat operator/(const Quat& rhs) const;
+    Quat operator+(const Quat& rhs) ;
+    Quat operator-(const Quat& rhs) ;
+    Quat operator*(const Quat& rhs) ;
+    Quat operator/(const Quat& rhs) ;
     Quat& conjugate();
     bool operator==(const Quat& rhs) const;
     bool operator!=(const Quat& rhs) const;
