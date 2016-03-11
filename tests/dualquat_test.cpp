@@ -69,6 +69,20 @@ int main(int argc, char* argv[]) {
   if (r != e) std::cout << ":-( scalar multiplication test failed" << std::endl;
   if (c != orig_c) std::cout << ":-( scalar multiplication changed lhs" << std::endl;
 
+  Eigen::Matrix<float, 4, 4> M;
+  M <<  1., -4.,  3.,  2.,
+        4.,  1., -2.,  3.,
+       -3.,  2.,  1.,  4.,
+       -2., -3., -4.,  1.;
+  if (orig_a.Q() == M) std::cout << ":-D Q matrix test passed" << std::endl;
+  if (orig_a.Q() != M) std::cout << ":-( Q matrix test failed" << std::endl;
+
+  M <<  1.,  4., -3.,  2.,
+       -4.,  1.,  2.,  3.,
+        3., -2.,  1.,  4.,
+       -2., -3., -4.,  1.;
+  if (orig_a.W() == M) std::cout << ":-D W matrix test passed" << std::endl;
+  if (orig_a.W() != M) std::cout << ":-( W matrix test failed" << std::endl;
 
   DualQuat<float> orig_A(Quat<float>(1., 2., 3., 4.), Quat<float>(5., 6., 7., 8.));
   DualQuat<float> A(Quat<float>(1., 2., 3., 4.), Quat<float>(5., 6., 7., 8.));

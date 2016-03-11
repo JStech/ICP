@@ -1,6 +1,7 @@
 #ifndef DUALQUAT_H
 #define DUALQUAT_H
 #include <iostream>
+#include <Eigen/Dense>
 
 template <typename T>
 class Quat {
@@ -81,10 +82,11 @@ class Quat {
     }
 
     Quat& conjugate();
-
     T magnitude() const;
-
     void normalize();
+    Eigen::Matrix<T, 3, 3> K() const;
+    Eigen::Matrix<T, 4, 4> Q() const;
+    Eigen::Matrix<T, 4, 4> W() const;
 
     friend std::ostream& operator<<(std::ostream& os, const Quat& rhs) {
       return os << rhs.w << " + " << rhs.x << "i + " << rhs.y << "j + " <<
