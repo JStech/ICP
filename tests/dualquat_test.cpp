@@ -63,6 +63,13 @@ int main(int argc, char* argv[]) {
   if ((a - e).magnitude() > epsilon)
     std::cout << ":-( normalization test failed" << std::endl;
 
+  e.w = e.x = e.y = e.z = 21.;
+  r = 3.f*c;
+  if (r == e) std::cout << ":-D scalar multiplication test passed" << std::endl;
+  if (r != e) std::cout << ":-( scalar multiplication test failed" << std::endl;
+  if (c != orig_c) std::cout << ":-( scalar multiplication changed lhs" << std::endl;
+
+
   DualQuat<float> orig_A(Quat<float>(1., 2., 3., 4.), Quat<float>(5., 6., 7., 8.));
   DualQuat<float> A(Quat<float>(1., 2., 3., 4.), Quat<float>(5., 6., 7., 8.));
   DualQuat<float> orig_B(Quat<float>(8., 7., 6., 5.), Quat<float>(4., 3., 2., 1.));
@@ -115,6 +122,12 @@ int main(int argc, char* argv[]) {
     std::cout << ":-D normalization test passed" << std::endl;
   if ((B - E).realMagnitude() > epsilon)
     std::cout << ":-( normalization test failed" << std::endl;
+
+  E.r.w = E.r.x = E.r.y = E.r.z = E.d.w = E.d.x = E.d.y = E.d.z = 27.f;
+  R = 3.f*C;
+  if (R == E) std::cout << ":-D scalar multiplication test passed" << std::endl;
+  if (R != E) std::cout << ":-( scalar multiplication test failed" << std::endl;
+  if (C != orig_C) std::cout << ":-( scalar multiplication changed lhs" << std::endl;
 
   return 0;
 }

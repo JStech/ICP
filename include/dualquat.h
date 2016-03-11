@@ -51,6 +51,14 @@ class Quat {
       return *this;
     }
 
+    Quat& operator*=(const T& scalar) {
+      this->w *= scalar;
+      this->x *= scalar;
+      this->y *= scalar;
+      this->z *= scalar;
+      return *this;
+    }
+
     friend Quat operator*(Quat lhs, const Quat& rhs) {
       lhs *= rhs;
       return lhs;
@@ -96,6 +104,11 @@ inline bool operator!=(const Quat<T>& lhs, const Quat<T>& rhs) {
 }
 
 template <typename T>
+inline Quat<T> operator*(T const& scalar, Quat<T> rhs) {
+  return rhs *= scalar;
+}
+
+template <typename T>
 class DualQuat {
   public:
     Quat<T> r;
@@ -136,6 +149,12 @@ class DualQuat {
       return *this;
     }
 
+    DualQuat& operator*=(const T& scalar) {
+      this->r *= scalar;
+      this->d *= scalar;
+      return *this;
+    }
+
     friend DualQuat operator*(DualQuat lhs, const DualQuat& rhs) {
       lhs *= rhs;
       return lhs;
@@ -160,6 +179,11 @@ inline bool operator==(const DualQuat<T>& lhs, const DualQuat<T>& rhs) {
 template <typename T>
 inline bool operator!=(const DualQuat<T>& lhs, const DualQuat<T>& rhs) {
   return !(lhs == rhs);
+}
+
+template <typename T>
+inline DualQuat<T> operator*(T const& scalar, DualQuat<T> rhs) {
+  return rhs *= scalar;
 }
 
 #endif // DUALQUAT_H
