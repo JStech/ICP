@@ -8,8 +8,17 @@ Quat<T>& Quat<T>::conjugate() {
 }
 
 template <typename T>
-T Quat<T>::magnitude() {
-  return this->w*this->w + this->x*this->x + this->y*this->y + this->z*this->z;
+T Quat<T>::magnitude() const {
+  return sqrt(this->w*this->w + this->x*this->x + this->y*this->y + this->z*this->z);
+}
+
+template <typename T>
+void Quat<T>::normalize() {
+  T magnitude = this->magnitude();
+  this->w /= magnitude;
+  this->x /= magnitude;
+  this->y /= magnitude;
+  this->z /= magnitude;
 }
 
 template <typename T>
@@ -20,8 +29,13 @@ DualQuat<T>& DualQuat<T>::conjugate() {
 }
 
 template <typename T>
-T DualQuat<T>::realMagnitude() {
+T DualQuat<T>::realMagnitude() const {
   return this->r.magnitude();
+}
+
+template <typename T>
+void DualQuat<T>::normalize() {
+  this->r.normalize();
 }
 
 template class Quat<float>;

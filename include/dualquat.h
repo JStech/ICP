@@ -55,7 +55,8 @@ class Quat {
     }
 
     Quat& operator/=(const Quat& rhs) {
-      T denom = rhs.w*rhs.w + rhs.x*rhs.x + rhs.y*rhs.y + rhs.z*rhs.z;
+      T denom = rhs.magnitude();
+      denom *= denom;
       T w = (this->w*rhs.w + this->x*rhs.x + this->y*rhs.y + this->z*rhs.z)/denom;
       T x = (this->x*rhs.w - this->w*rhs.x - this->z*rhs.y + this->y*rhs.z)/denom;
       T y = (this->y*rhs.w + this->z*rhs.x - this->w*rhs.y - this->x*rhs.z)/denom;
@@ -71,7 +72,9 @@ class Quat {
 
     Quat& conjugate();
 
-    T magnitude();
+    T magnitude() const;
+
+    void normalize();
 
     friend std::ostream& operator<<(std::ostream& os, const Quat& rhs) {
       return os << rhs.w << " + " << rhs.x << "i + " << rhs.y << "j + " <<
@@ -138,7 +141,9 @@ class DualQuat {
 
     DualQuat& conjugate();
 
-    T realMagnitude();
+    T realMagnitude() const;
+
+    void normalize();
 
     friend std::ostream& operator<<(std::ostream& os, const DualQuat& rhs) {
       return os << "(" << rhs.r << ") + (" << rhs.d << ")e";

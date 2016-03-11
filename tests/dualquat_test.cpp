@@ -1,5 +1,8 @@
 #include "dualquat.h"
 #include <iostream>
+#include <cmath>
+
+float epsilon = 1e-6;
 
 int main(int argc, char* argv[]) {
   Quat<float> orig_a(1., 2., 3., 4.);
@@ -37,14 +40,28 @@ int main(int argc, char* argv[]) {
 
   e.w = 70./30.; e.x = 0.; e.y = 28./30.; e.z = 14./30.;
   r = c/b;
-  if (r == e) std::cout << ":-D division test passed" << std::endl;
-  if (r != e) std::cout << ":-( division test failed" << std::endl;
+  if ((r - e).magnitude() < epsilon)
+    std::cout << ":-D division test passed" << std::endl;
+  if ((r - e).magnitude() > epsilon)
+    std::cout << ":-( division test failed" << std::endl;
   if (c != orig_c) std::cout << ":-( division changed lhs" << std::endl;
 
   e.w = 4.; e.x = -3.; e.y = -2.; e.z = -1.;
   r = b.conjugate();
   if (r == e && b == e) std::cout << ":-D conjugate test passed" << std::endl;
   if (r != e || b != e) std::cout << ":-( conjugate test failed" << std::endl;
+
+  if (std::abs(a.magnitude() - sqrt(30.)) < epsilon)
+    std::cout << ":-D magnitude test passed" << std::endl;
+  if (std::abs(a.magnitude() - sqrt(30.)) > epsilon)
+    std::cout << ":-( magnitude test failed" << std::endl;
+
+  e.w = 1./sqrt(30.); e.x = 2./sqrt(30.); e.y = 3./sqrt(30.); e.z = 4./sqrt(30.);
+  a.normalize();
+  if ((a - e).magnitude() < epsilon)
+    std::cout << ":-D normalization test passed" << std::endl;
+  if ((a - e).magnitude() > epsilon)
+    std::cout << ":-( normalization test failed" << std::endl;
 
   DualQuat<float> orig_A(Quat<float>(1., 2., 3., 4.), Quat<float>(5., 6., 7., 8.));
   DualQuat<float> A(Quat<float>(1., 2., 3., 4.), Quat<float>(5., 6., 7., 8.));
@@ -80,5 +97,23 @@ int main(int argc, char* argv[]) {
   if (R != E) std::cout << ":-( multiplication test failed" << std::endl;
   if (A != orig_A) std::cout << ":-( multiplication changed lhs" << std::endl;
 
+  if (std::abs(B.realMagnitude() - sqrt(174.)) < epsilon)
+    std::cout << ":-D magnitude test passed" << std::endl;
+  if (std::abs(B.realMagnitude() - sqrt(174.)) > epsilon)
+    std::cout << ":-( magnitude test failed" << std::endl;
+
+  E.r.w = 1.; E.r.x = -2.; E.r.y = -3.; E.r.z = -4.;
+  E.d.w = 5.; E.d.x = -6.; E.d.y = -7.; E.d.z = -8.;
+  R = A.conjugate();
+  if (R == E && A == E) std::cout << ":-D conjugate test passed" << std::endl;
+  if (R != E || A != E) std::cout << ":-( conjugate test failed" << std::endl;
+
+  E.r.w = 8./sqrt(174.); E.r.x = 7./sqrt(174.); E.r.y = 6./sqrt(174.); E.r.z = 5./sqrt(174.);
+  E.d.w = 4./sqrt(174.); E.d.x = 3./sqrt(174.); E.d.y = 2./sqrt(174.); E.d.z = 1./sqrt(174.);
+  B.normalize();
+  if ((B - E).realMagnitude() < epsilon)
+    std::cout << ":-D normalization test passed" << std::endl;
+  if ((B - E).realMagnitude() > epsilon)
+    std::cout << ":-( normalization test failed" << std::endl;
   return 0;
 }
