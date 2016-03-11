@@ -71,6 +71,8 @@ class Quat {
 
     Quat& conjugate();
 
+    T magnitude();
+
     friend std::ostream& operator<<(std::ostream& os, const Quat& rhs) {
       return os << rhs.w << " + " << rhs.x << "i + " << rhs.y << "j + " <<
         rhs.z << "k";
@@ -94,7 +96,7 @@ class DualQuat {
     Quat<T> r;
     Quat<T> d;
 
-    DualQuat();
+    DualQuat() {}
     DualQuat(Quat<T> r, Quat<T> d) : r(r), d(d) {}
 
     DualQuat& operator+=(const DualQuat& rhs) {
@@ -103,43 +105,54 @@ class DualQuat {
       return *this;
     }
 
-    friend DualQuat operator+(const DualQuat lhs, const DualQuat& rhs) {
+    friend DualQuat operator+(DualQuat lhs, const DualQuat& rhs) {
       lhs += rhs;
       return lhs;
     }
 
-    DualQuat& operator-() {
-      this->r = -this->r;
-      this->d = -this->d;
-      return *this;
+    DualQuat operator-() const {
+      return DualQuat(-r, -d);
     }
 
-    DualQuat& operator-=(DualQuat& rhs) {
+    DualQuat& operator-=(const DualQuat& rhs) {
       *this += -rhs;
       return *this;
     }
 
-    friend DualQuat operator-(const DualQuat lhs, const DualQuat& rhs) {
+    friend DualQuat operator-(DualQuat lhs, const DualQuat& rhs) {
       lhs -= rhs;
       return lhs;
     }
 
     DualQuat& operator*=(const DualQuat& rhs) {
-      this->r = this->r * rhs.r;
+      Quat<T> r = this->r * rhs.r;
       this->d = this->r * rhs.d + this->d * rhs.r;
+      this->r = r;
       return *this;
     }
 
-    friend DualQuat operator*(const DualQuat lhs, const DualQuat& rhs) {
+    friend DualQuat operator*(DualQuat lhs, const DualQuat& rhs) {
       lhs *= rhs;
       return lhs;
     }
 
-    DualQuat& conjugate() {
-      this->r = this->r.conjugate();
-      this->d = this->d.conjugate();
-      return *this;
+    DualQuat& conjugate();
+
+    T realMagnitude();
+
+    friend std::ostream& operator<<(std::ostream& os, const DualQuat& rhs) {
+      return os << "(" << rhs.r << ") + (" << rhs.d << ")e";
     }
 };
+
+template <typename T>
+inline bool operator==(const DualQuat<T>& lhs, const DualQuat<T>& rhs) {
+  return (lhs.r == rhs.r) && (lhs.d == rhs.d);
+}
+
+template <typename T>
+inline bool operator!=(const DualQuat<T>& lhs, const DualQuat<T>& rhs) {
+  return !(lhs == rhs);
+}
 
 #endif // DUALQUAT_H

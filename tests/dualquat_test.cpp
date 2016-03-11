@@ -8,8 +8,9 @@ int main(int argc, char* argv[]) {
   Quat<float> b(4., 3., 2., 1.);
   Quat<float> orig_c(7., 7., 7., 7.);
   Quat<float> c(7., 7., 7., 7.);
-
   Quat<float> r, e;
+  std::cout << a << std::endl << b << std::endl << c << std::endl << std::endl;
+
   e.w = e.x = e.y = e.z = 5.;
   r = a+b;
   if (r == e) std::cout << ":-D addition test passed" << std::endl;
@@ -44,6 +45,40 @@ int main(int argc, char* argv[]) {
   r = b.conjugate();
   if (r == e && b == e) std::cout << ":-D conjugate test passed" << std::endl;
   if (r != e || b != e) std::cout << ":-( conjugate test failed" << std::endl;
+
+  DualQuat<float> orig_A(Quat<float>(1., 2., 3., 4.), Quat<float>(5., 6., 7., 8.));
+  DualQuat<float> A(Quat<float>(1., 2., 3., 4.), Quat<float>(5., 6., 7., 8.));
+  DualQuat<float> orig_B(Quat<float>(8., 7., 6., 5.), Quat<float>(4., 3., 2., 1.));
+  DualQuat<float> B(Quat<float>(8., 7., 6., 5.), Quat<float>(4., 3., 2., 1.));
+  DualQuat<float> orig_C(Quat<float>(9., 9., 9., 9.), Quat<float>(9., 9., 9., 9.));
+  DualQuat<float> C(Quat<float>(9., 9., 9., 9.), Quat<float>(9., 9., 9., 9.));
+  DualQuat<float> R, E;
+  std::cout << std::endl << A << std::endl << B << std::endl << C << std::endl
+    << std::endl;
+
+  R = A+B;
+  if (R==C) std::cout << ":-D addition test passed" << std::endl;
+  if (R!=C) std::cout << ":-( addition test failed" << std::endl;
+  if (A != orig_A) std::cout << ":-( addition changed lhs" << std::endl;
+
+  E.r.w = -8.; E.r.x = -7.; E.r.y = -6.; E.r.z = -5.;
+  E.d.w = -4.; E.d.x = -3.; E.d.y = -2.; E.d.z = -1.;
+  R = -B;
+  if (R == E) std::cout << ":-D negation test passed" << std::endl;
+  if (R != E) std::cout << ":-( negation test failed" << std::endl;
+  if (B != orig_B) std::cout << ":-( negation changed rhs" << std::endl;
+
+  R = C - B;
+  if (R == A) std::cout << ":-D subtraction test passed" << std::endl;
+  if (R != A) std::cout << ":-( subtraction test failed" << std::endl;
+  if (C != orig_C) std::cout << ":-( subtraction changed lhs" << std::endl;
+
+  E.r.w =  -72.; E.r.x =  18.; E.r.y =  54.; E.r.z =  36.;
+  E.d.w = -216.; E.d.x = 108.; E.d.y = 180.; E.d.z = 144.;
+  R = A*C;
+  if (R == E) std::cout << ":-D multiplication test passed" << std::endl;
+  if (R != E) std::cout << ":-( multiplication test failed" << std::endl;
+  if (A != orig_A) std::cout << ":-( multiplication changed lhs" << std::endl;
 
   return 0;
 }
