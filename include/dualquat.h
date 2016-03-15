@@ -2,6 +2,7 @@
 #define DUALQUAT_H
 #include <iostream>
 #include <Eigen/Dense>
+#include <pcl/point_types.h>
 
 template <typename T>
 class Quat {
@@ -18,6 +19,12 @@ class Quat {
       x(x), y(y), z(z), w(w) {}
     Quat(T vector[4]) :
       x(vector[0]), y(vector[1]), z(vector[2]), w(vector[3]) {}
+    Quat(pcl::PointXYZ p) {
+      this->x = (T) p.x;
+      this->y = (T) p.y;
+      this->z = (T) p.z;
+      *this *= 0.5;
+    }
 
     Quat& operator+=(const Quat& rhs) {
       this->w += rhs.w; this->x += rhs.x; this->y += rhs.y; this->z += rhs.z;
@@ -87,6 +94,7 @@ class Quat {
     Eigen::Matrix<T, 3, 3> K() const;
     Eigen::Matrix<T, 4, 4> Q() const;
     Eigen::Matrix<T, 4, 4> W() const;
+    Eigen::Matrix<T, 4, 4> R() const;
 
     friend std::ostream& operator<<(std::ostream& os, const Quat& rhs) {
       return os << rhs.w << " + " << rhs.x << "i + " << rhs.y << "j + " <<
@@ -163,9 +171,7 @@ class DualQuat {
     }
 
     DualQuat& conjugate();
-
     T realMagnitude() const;
-
     void normalize();
 
     friend std::ostream& operator<<(std::ostream& os, const DualQuat& rhs) {

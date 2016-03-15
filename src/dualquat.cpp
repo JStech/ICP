@@ -54,6 +54,11 @@ Eigen::Matrix<T, 4, 4> Quat<T>::W() const {
 }
 
 template <typename T>
+Eigen::Matrix<T, 4, 4> Quat<T>::R() const {
+  return this->W().transpose() * this->Q();
+}
+
+template <typename T>
 DualQuat<T>& DualQuat<T>::conjugate() {
   this->r = this->r.conjugate();
   this->d = this->d.conjugate();

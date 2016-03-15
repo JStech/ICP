@@ -84,6 +84,15 @@ int main(int argc, char* argv[]) {
   if (orig_a.W() == M) std::cout << ":-D W matrix test passed" << std::endl;
   if (orig_a.W() != M) std::cout << ":-( W matrix test failed" << std::endl;
 
+  M << -20./30.,   4./30.,  22./30., 0.,
+        20./30., -10./30.,  20./30., 0.,
+        10./30.,  28./30.,   4./30., 0.,
+             0.,       0.,       0., 1.;
+  if ((a.R() - M).array().abs().sum() < epsilon)
+    std::cout << ":-D R matrix test passed" << std::endl;
+  if ((a.R() - M).array().abs().sum() > epsilon)
+    std::cout << ":-( R matrix test failed" << std::endl;
+
   DualQuat<float> orig_A(Quat<float>(1., 2., 3., 4.), Quat<float>(5., 6., 7., 8.));
   DualQuat<float> A(Quat<float>(1., 2., 3., 4.), Quat<float>(5., 6., 7., 8.));
   DualQuat<float> orig_B(Quat<float>(8., 7., 6., 5.), Quat<float>(4., 3., 2., 1.));

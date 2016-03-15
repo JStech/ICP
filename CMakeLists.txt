@@ -22,10 +22,12 @@ include_directories( "include"
     ${CMAKE_SOURCE_DIR}
     )
 
-add_library(dualquat SHARED src/dualquat.cpp)
+add_library( dualquat SHARED src/dualquat.cpp )
+add_library( icp SHARED src/icp.cpp )
 add_executable( dualquat_test tests/dualquat_test.cpp )
-include_directories( ${CMAKE_BINARY_DIR} )
-target_link_libraries(dualquat_test dualquat)
+add_executable( main src/main.cpp )
+target_link_libraries( dualquat_test dualquat )
+target_link_libraries( main icp )
 
 if(BUILD_POINTCLOUDS AND PCL_FOUND)
    include_directories( ${PCL_INCLUDE_DIRS} )
