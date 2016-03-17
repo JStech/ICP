@@ -43,7 +43,8 @@ int main(int argc, char* argv[]) {
     src_cloud.points[i].z = src_pts[i][2];
   }
 
-  Eigen::Matrix<float, 4, 4> m = localize(ref_cloud, src_cloud, matched);
+  Eigen::Matrix<float, 4, 4> m = localize(ref_cloud.makeShared(),
+      src_cloud.makeShared(), matched);
 
   bool passed=true;
   for (size_t i=0; i<src_cloud.points.size(); i++) {

@@ -12,13 +12,13 @@
 using namespace pcl;
 
 float choose_xi(std::vector<std::vector<float>> nearest_d,
-    std::vector<bool> matched) {
+    std::vector<int> matched) {
   // TODO: implement this
   return 100.0;
 }
 
-Eigen::Matrix<float, 4, 4> localize(PointCloud<PointXYZ> reference,
-    PointCloud<PointXYZ> source, std::vector<int> matched) {
+Eigen::Matrix<float, 4, 4> localize(PointCloud<PointXYZ>::Ptr reference,
+    PointCloud<PointXYZ>::Ptr source, std::vector<int> matched) {
   // Compute matrices C1, C2, C3
   Eigen::Matrix<float, 4, 4> C1 = Eigen::Matrix<float, 4, 4>::Zero();
   Eigen::Matrix<float, 4, 4> C2 = Eigen::Matrix<float, 4, 4>::Zero();
@@ -26,10 +26,10 @@ Eigen::Matrix<float, 4, 4> localize(PointCloud<PointXYZ> reference,
   float W = 0.;
   for (size_t i=0; i<matched.size(); i++) {
     if (matched[i]<0) continue;
-    C1 += Quat<float>(reference.points[matched[i]]).Q().transpose() *
-      Quat<float>(source.points[i]).W();
-    C2 += Quat<float>(source.points[i]).W() -
-      Quat<float>(reference.points[matched[i]]).Q();
+    C1 += Quat<float>(reference->points[matched[i]]).Q().transpose() *
+      Quat<float>(source->points[i]).W();
+    C2 += Quat<float>(source->points[i]).W() -
+      Quat<float>(reference->points[matched[i]]).Q();
     W += 1.;
   }
 
@@ -60,7 +60,7 @@ Eigen::Matrix<float, 4, 4> localize(PointCloud<PointXYZ> reference,
 
 // input: reference and source point clouds, prior SE3 transform guess
 // output: SE3 transform from source to reference, total error (of some sort TODO)
-float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ> source,
+float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
     Sophus::SE3d &Trs) {
 
   // initialize ICP parameters
@@ -72,33 +72,35 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ> source,
   kdtree.setInputCloud(reference);
 
   // vectors to receive nearest neighbors
-  std::vector<std::vector<int>> nearest_i(source.size(), std::vector<int>(1));
-  std::vector<std::vector<float>> nearest_d(source.size(),
+  std::vector<std::vector<int>> nearest_i(source->size(), std::vector<int>(1));
+  std::vector<std::vector<float>> nearest_d(source->size(),
       std::vector<float>(1));
 
-  std::vector<bool> matched(source.size());
+  std::vector<int> matched(source->size());
 
   for (int iter=0; iter < MAX_ITER; iter++) {
 
     // find closest points
-    for (size_t i=0; i<source.size(); i++) {
-      if (kdtree.nearestKSearch(source.points[i], 1, nearest_i[i],
+    for (size_t i=0; i<source->size(); i++) {
+      if (kdtree.nearestKSearch(source->points[i], 1, nearest_i[i],
             nearest_d[i]) == 0) {
         nearest_i[i][0] = -1;
         nearest_d[i][0] = 0.;
       }
     }
 
+    // choose which matches to use
     float mu=0.;
     float sigma=0.;
     int n=0;
 
-    // choose which matches to use
-    for (size_t i=0; i<source.size(); i++) {
-      matched[i] = nearest_d[i][0] < Dmax;
-      if (matched[i]) {
+    for (size_t i=0; i<source->size(); i++) {
+      if (nearest_d[i][0] < Dmax) {
+        matched[i] = nearest_i[i][0];
         mu += nearest_d[i][0];
         sigma += nearest_d[i][0]*nearest_d[i][0];
+      } else {
+        matched[i] = -1;
       }
       n++;
     }
@@ -116,14 +118,21 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ> source,
       Dmax = choose_xi(nearest_d, matched);
     }
 
-    for (size_t i=0; i<source.size(); i++) {
-      matched[i] = nearest_d[i][0] < Dmax;
+    for (size_t i=0; i<source->size(); i++) {
+      if (nearest_d[i][0] < Dmax) {
+        matched[i] = nearest_i[i][0];
+      } else {
+        matched[i] = -1;
+      }
     }
 
     // compute motion
-
+    Eigen::Matrix<float, 4, 4> T = localize(reference, source, matched);
 
     // apply to all source points
+    for (size_t i=0; i<source->points.size(); i++) {
+      source->points[i].getVector4fMap() = T*source->points[i].getVector4fMap();
+    }
   }
 
   return 0.f;
