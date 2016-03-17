@@ -1,9 +1,11 @@
+//#include "pcl/kdtree/impl/kdtree_flann.hpp"
+#include <pcl/kdtree/impl/kdtree_flann.hpp>
+#include <pcl/impl/point_types.hpp>
 #include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl/kdtree/kdtree_flann.h>
 #include <cmath>
 #include <Eigen/Eigenvalues>
 #include "icp.h"
+#include "dualquat.h"
 #include <iostream> // TODO: remove this when done developing
 #define MAX_ITER 20
 
@@ -16,18 +18,18 @@ float choose_xi(std::vector<std::vector<float>> nearest_d,
 }
 
 Eigen::Matrix<float, 4, 4> localize(PointCloud<PointXYZ> reference,
-    PointCloud<PointXYZ> source, std::vector<bool> matched) {
+    PointCloud<PointXYZ> source, std::vector<int> matched) {
   // Compute matrices C1, C2, C3
   Eigen::Matrix<float, 4, 4> C1 = Eigen::Matrix<float, 4, 4>::Zero();
   Eigen::Matrix<float, 4, 4> C2 = Eigen::Matrix<float, 4, 4>::Zero();
 
   float W = 0.;
-  for (int i=0; i<matched.size(); i++) {
-    if (!matched[i]) continue;
-    C1 += Quat<float>(reference.points[i]).Q().transpose() *
+  for (size_t i=0; i<matched.size(); i++) {
+    if (matched[i]<0) continue;
+    C1 += Quat<float>(reference.points[matched[i]]).Q().transpose() *
       Quat<float>(source.points[i]).W();
     C2 += Quat<float>(source.points[i]).W() -
-      Quat<float>(reference.points[i]).Q();
+      Quat<float>(reference.points[matched[i]]).Q();
     W += 1.;
   }
 
@@ -66,7 +68,7 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ> source,
   for (int iter=0; iter < MAX_ITER; iter++) {
 
     // find closest points
-    for (int i=0; i<source.size(); i++) {
+    for (size_t i=0; i<source.size(); i++) {
       if (kdtree.nearestKSearch(source.points[i], 1, nearest_i[i],
             nearest_d[i]) == 0) {
         nearest_i[i][0] = -1;
@@ -79,7 +81,7 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ> source,
     int n=0;
 
     // choose which matches to use
-    for (int i=0; i<source.size(); i++) {
+    for (size_t i=0; i<source.size(); i++) {
       matched[i] = nearest_d[i][0] < Dmax;
       if (matched[i]) {
         mu += nearest_d[i][0];
@@ -101,7 +103,7 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ> source,
       Dmax = choose_xi(nearest_d, matched);
     }
 
-    for (int i=0; i<source.size(); i++) {
+    for (size_t i=0; i<source.size(); i++) {
       matched[i] = nearest_d[i][0] < Dmax;
     }
 
@@ -110,4 +112,6 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ> source,
 
     // apply to all source points
   }
+
+  return 0.f;
 }

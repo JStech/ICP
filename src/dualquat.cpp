@@ -115,6 +115,7 @@ void DualQuat<T>::normalize() {
 template <typename T>
 Eigen::Matrix<T, 4, 4> DualQuat<T>::Matrix() {
   Eigen::Matrix<T, 4, 4> out = this->r.W().transpose()*this->r.Q();
+  return out;
 }
 
 template <typename T>
