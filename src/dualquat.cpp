@@ -3,6 +3,13 @@
 #include <Eigen/Dense>
 
 template <typename T>
+Quat<T>& Quat<T>::Identity() {
+  this->w = 1.0;
+  this->x = this->y = this->z = 0.0;
+  return *this;
+}
+
+template <typename T>
 Quat<T>& Quat<T>::conjugate() {
   this->x = -this->x; this->y = -this->y; this->z = -this->z;
   return *this;
@@ -59,6 +66,28 @@ Eigen::Matrix<T, 4, 4> Quat<T>::R() const {
 }
 
 template <typename T>
+Eigen::Matrix<T, 3, 3> Quat<T>::Rot() const {
+  T norm = this->magnitude();
+  T w = this->w/norm;
+  T x = this->x/norm;
+  T y = this->y/norm;
+  T z = this->z/norm;
+  Eigen::Matrix<T, 3, 3> r;
+  r << 1 - 2*y*y - 2*z*z,     2*x*y - 2*z*w,     2*x*z + 2*y*w,
+           2*x*y + 2*z*w, 1 - 2*x*x - 2*z*z,     2*y*z - 2*x*w,
+           2*x*z - 2*w*y,     2*w*x + 2*y*z, 1 - 2*x*x - 2*y*y;
+  return r;
+}
+
+template <typename T>
+DualQuat<T>& DualQuat<T>::Identity() {
+  this->r.w = 1.;
+  this->r.x = this->r.y = this->r.z = 0.;
+  this->d.w = this->d.x = this->d.y = this->d.z = 0.;
+  return *this;
+}
+
+template <typename T>
 DualQuat<T>& DualQuat<T>::conjugate() {
   this->r = this->r.conjugate();
   this->d = this->d.conjugate();
@@ -71,8 +100,29 @@ T DualQuat<T>::realMagnitude() const {
 }
 
 template <typename T>
+T DualQuat<T>::sumSq() const {
+  return this->r.w*this->r.w + this->r.x*this->r.x +
+    this->r.y*this->r.y + this->r.z*this->r.z +
+    this->d.w*this->d.w + this->d.x*this->d.x +
+    this->d.y*this->d.y + this->d.z*this->d.z;
+}
+
+template <typename T>
 void DualQuat<T>::normalize() {
   this->r.normalize();
+}
+
+template <typename T>
+Eigen::Matrix<T, 4, 4> DualQuat<T>::Matrix() {
+  Eigen::Matrix<T, 4, 4> out = this->r.W().transpose()*this->r.Q();
+}
+
+template <typename T>
+Eigen::Vector3d DualQuat<T>::getTranslation() const {
+  Quat<T> r = this->r;
+  Quat<T> t = 2.f*this->d*r.conjugate();
+  Eigen::Vector3d ret(t.x, t.y, t.z);
+  return ret;
 }
 
 template class Quat<float>;

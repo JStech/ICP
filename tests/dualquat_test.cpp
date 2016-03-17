@@ -1,8 +1,10 @@
 #include "dualquat.h"
 #include <iostream>
+#define _USE_MATH_DEFINES
 #include <cmath>
 
 float epsilon = 1e-6;
+float pi = M_PI;
 
 int main(int argc, char* argv[]) {
   Quat<float> orig_a(1., 2., 3., 4.);
@@ -151,6 +153,64 @@ int main(int argc, char* argv[]) {
   if (R == E) std::cout << ":-D scalar multiplication test passed" << std::endl;
   if (R != E) std::cout << ":-( scalar multiplication test failed" << std::endl;
   if (C != orig_C) std::cout << ":-( scalar multiplication changed lhs" << std::endl;
+
+  /////////////////// putting it all together: transformations ///////////////////
+
+  // based on: http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/other
+                                       //  /dualQuaternion/example/index.htm
+  typedef DualQuat<float> DQf;
+  typedef Quat<float> Qf;
+
+  DQf Q_pc(Qf().Identity(), Qf(pcl::PointXYZ(0., 0., 100.)));
+  E.r.w = 1.0;
+  E.r.x = E.r.y = E.r.z = E.d.w = E.d.x = E.d.y = 0.0;
+  E.d.z = 50.0;
+  if (Q_pc == E) std::cout << ":-D constructing Q_pc passed" << std::endl;
+  if (Q_pc != E) std::cout << ":-( constructing Q_pc failed" << std::endl;
+
+  DQf Q_ch(Qf(Eigen::Vector3d(0., 1., 0.), pi/6), Qf(0., 0., 0., 0.));
+  DQf Q_ph = Q_pc * Q_ch;
+  E.r.w = cos(pi/12); E.r.x = 0.; E.r.y = sin(pi/12); E.r.z = 0.;
+  E.d.w = 0.; E.d.x = -12.940952255126037;
+  E.d.y = 0.; E.d.z = 48.296291314453413;
+  if ((Q_ph - E).sumSq() < epsilon) std::cout << ":-D calculating Q_ph passed" << std::endl;
+  if ((Q_ph - E).sumSq() > epsilon) std::cout << ":-( calculating Q_ph failed" << std::endl;
+
+  std::cout << std::endl << "Transformations" << std::endl << std::endl;
+
+  // let's do something more complex
+  DQf Q_p1(pcl::PointXYZ(1., 2., 3.));
+  E.r.w = 1.;
+  E.r.x = E.r.y = E.r.z = E.d.w = 0.;
+  E.d.x = 0.5; E.d.y = 1.; E.d.z = 1.5;
+  if (Q_p1 == E) std::cout << ":-D constructing Q_p1 passed" << std::endl;
+  if (Q_p1 != E) std::cout << ":-( constructing Q_p1 failed" << std::endl;
+
+  // translate by (1, -1, 1) to 2, 1, 4
+  DQf Q_t1(Qf().Identity(), 0.5f*Qf(0., 1., -1., 1.));
+  E.r.w = 1.;
+  E.r.x = E.r.y = E.r.z = E.d.w = 0.;
+  E.d.x = 0.5; E.d.y = -0.5; E.d.z = 0.5;
+  if (Q_t1 == E) std::cout << ":-D constructing Q_t1 passed" << std::endl;
+  if (Q_t1 != E) std::cout << ":-( constructing Q_t1 failed" << std::endl;
+
+  // rotate by pi/5 around (-1., 0.5, 0.75) to
+  //    2.005723993542627 3.289322031376978 2.481417303805519
+  DQf Q_r1(Qf(Eigen::Vector3d(-1., 0.5, 0.75), pi/5), Qf());
+  E.r.w = 0.951056516295154; E.r.x = -0.229532061091648;
+  E.r.y = 0.114766030545824; E.r.z = 0.172149045818736;
+  E.d.w = E.d.x = E.d.y = E.d.z = 0.;
+  if ((Q_r1 - E).sumSq() < epsilon) std::cout << ":-D constructing Q_r1 passed" << std::endl;
+  if ((Q_r1 - E).sumSq() > epsilon) std::cout << ":-( constructing Q_r1 failed" << std::endl;
+
+  R = Q_r1 * Q_t1 * Q_p1;
+  Eigen::Vector3d t(2.005723993542627, 3.289322031376978, 2.481417303805519);
+  if ((t - R.getTranslation()).norm() < epsilon) {
+    std::cout << ":-D entire translation passed" << std::endl;
+  }
+  if ((t - R.getTranslation()).norm() > epsilon) {
+    std::cout << ":-( entire translation failed" << std::endl;
+  }
 
   return 0;
 }

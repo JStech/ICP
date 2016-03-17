@@ -3,6 +3,7 @@
 #include <iostream>
 #include <Eigen/Dense>
 #include <pcl/point_types.h>
+#include <cmath>
 
 template <typename T>
 class Quat {
@@ -20,10 +21,20 @@ class Quat {
     Quat(T vector[4]) :
       x(vector[0]), y(vector[1]), z(vector[2]), w(vector[3]) {}
     Quat(pcl::PointXYZ p) {
+      this->w = 0.;
       this->x = (T) p.x;
       this->y = (T) p.y;
       this->z = (T) p.z;
       *this *= 0.5;
+    }
+    Quat(Eigen::Vector3d vector, T rotation_radians) {
+      vector = vector / vector.norm();
+      T s = sin(rotation_radians/2);
+      this->w = cos(rotation_radians/2);
+      this->x = vector[0] * s;
+      this->y = vector[1] * s;
+      this->z = vector[2] * s;
+      this->normalize();
     }
 
     Quat& operator+=(const Quat& rhs) {
@@ -95,6 +106,8 @@ class Quat {
     Eigen::Matrix<T, 4, 4> Q() const;
     Eigen::Matrix<T, 4, 4> W() const;
     Eigen::Matrix<T, 4, 4> R() const;
+    Eigen::Matrix<T, 3, 3> Rot() const;
+    Quat& Identity();
 
     friend std::ostream& operator<<(std::ostream& os, const Quat& rhs) {
       return os << rhs.w << " + " << rhs.x << "i + " << rhs.y << "j + " <<
@@ -126,6 +139,10 @@ class DualQuat {
 
     DualQuat() {}
     DualQuat(Quat<T> r, Quat<T> d) : r(r), d(d) {}
+    DualQuat(pcl::PointXYZ point) {
+      this->d = Quat<T>(point);
+      this->r = Quat<T>().Identity();
+    }
 
     DualQuat& operator+=(const DualQuat& rhs) {
       this->r += rhs.r;
@@ -172,12 +189,19 @@ class DualQuat {
 
     DualQuat& conjugate();
     T realMagnitude() const;
+    T sumSq() const;
     void normalize();
+    Eigen::Matrix<T, 4, 4> Matrix();
+    DualQuat& Identity();
+    Eigen::Vector3d getTranslation() const;
 
     friend std::ostream& operator<<(std::ostream& os, const DualQuat& rhs) {
       return os << "(" << rhs.r << ") + (" << rhs.d << ")e";
     }
 };
+
+template <typename T>
+DualQuat<T>& DualQuatIdentity();
 
 template <typename T>
 inline bool operator==(const DualQuat<T>& lhs, const DualQuat<T>& rhs) {
