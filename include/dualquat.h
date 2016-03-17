@@ -20,22 +20,9 @@ class Quat {
       x(x), y(y), z(z), w(w) {}
     Quat(T vector[4]) :
       x(vector[0]), y(vector[1]), z(vector[2]), w(vector[3]) {}
-    Quat(pcl::PointXYZ p) {
-      this->w = 0.;
-      this->x = (T) p.x;
-      this->y = (T) p.y;
-      this->z = (T) p.z;
-      *this *= 0.5;
-    }
-    Quat(Eigen::Vector3d vector, T rotation_radians) {
-      vector = vector / vector.norm();
-      T s = sin(rotation_radians/2);
-      this->w = cos(rotation_radians/2);
-      this->x = vector[0] * s;
-      this->y = vector[1] * s;
-      this->z = vector[2] * s;
-      this->normalize();
-    }
+    Quat(pcl::PointXYZ p);
+    Quat(Eigen::Vector3d vector, T rotation_radians);
+    Quat(Eigen::Matrix<T, 4, 1> vector);
 
     Quat& operator+=(const Quat& rhs) {
       this->w += rhs.w; this->x += rhs.x; this->y += rhs.y; this->z += rhs.z;
@@ -139,10 +126,7 @@ class DualQuat {
 
     DualQuat() {}
     DualQuat(Quat<T> r, Quat<T> d) : r(r), d(d) {}
-    DualQuat(pcl::PointXYZ point) {
-      this->d = Quat<T>(point);
-      this->r = Quat<T>().Identity();
-    }
+    DualQuat(pcl::PointXYZ point);
 
     DualQuat& operator+=(const DualQuat& rhs) {
       this->r += rhs.r;

@@ -3,6 +3,34 @@
 #include <Eigen/Dense>
 
 template <typename T>
+Quat<T>::Quat(pcl::PointXYZ p) {
+  this->w = 0.;
+  this->x = (T) p.x;
+  this->y = (T) p.y;
+  this->z = (T) p.z;
+  *this *= 0.5;
+}
+
+template <typename T>
+Quat<T>::Quat(Eigen::Vector3d vector, T rotation_radians) {
+  vector = vector / vector.norm();
+  T s = sin(rotation_radians/2);
+  this->w = cos(rotation_radians/2);
+  this->x = vector[0] * s;
+  this->y = vector[1] * s;
+  this->z = vector[2] * s;
+  this->normalize();
+}
+
+template <typename T>
+Quat<T>::Quat(Eigen::Matrix<T, 4, 1> vector) {
+  this->w = vector[3];
+  this->x = vector[0];
+  this->y = vector[1];
+  this->z = vector[2];
+}
+
+template <typename T>
 Quat<T>& Quat<T>::Identity() {
   this->w = 1.0;
   this->x = this->y = this->z = 0.0;
@@ -77,6 +105,12 @@ Eigen::Matrix<T, 3, 3> Quat<T>::Rot() const {
            2*x*y + 2*z*w, 1 - 2*x*x - 2*z*z,     2*y*z - 2*x*w,
            2*x*z - 2*w*y,     2*w*x + 2*y*z, 1 - 2*x*x - 2*y*y;
   return r;
+}
+
+template <typename T>
+DualQuat<T>::DualQuat(pcl::PointXYZ point) {
+  this->d = Quat<T>(point);
+  this->r = Quat<T>().Identity();
 }
 
 template <typename T>

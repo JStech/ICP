@@ -9,7 +9,7 @@ find_package(Calibu REQUIRED)
 find_package(HAL REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(SceneGraph REQUIRED)
-find_package(PCL 1.3 REQUIRED)
+find_package(PCL REQUIRED)
 
 include_directories( ${Calibu_INCLUDE_DIRS} )
 include_directories( ${HAL_INCLUDE_DIRS} )
@@ -21,6 +21,7 @@ include_directories( "include"
   ${CMAKE_SOURCE_DIR}
   )
 
+link_directories( ${CMAKE_BINARY_DIR} )
 link_directories( ${PCL_LIBRARY_DIRS} )
 add_definitions( ${PCL_DEFINITIONS} )
 
@@ -30,6 +31,7 @@ target_link_libraries( dualquat_test dualquat )
 
 add_library( icp SHARED src/icp.cpp )
 add_executable( icp_test tests/icp_test.cpp )
+target_link_libraries( icp dualquat ${PCL_LIBRARIES} )
 target_link_libraries( icp_test dualquat icp ${PCL_LIBRARIES} )
 
 add_executable( main src/main.cpp )

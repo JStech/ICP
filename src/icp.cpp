@@ -6,7 +6,7 @@
 #include <Eigen/Eigenvalues>
 #include "icp.h"
 #include "dualquat.h"
-#include <iostream> // TODO: remove this when done developing
+#include <algorithm>
 #define MAX_ITER 20
 
 using namespace pcl;
@@ -40,8 +40,21 @@ Eigen::Matrix<float, 4, 4> localize(PointCloud<PointXYZ> reference,
 
   Eigen::EigenSolver<Eigen::Matrix<float, 4, 4>> solver;
   solver.compute(A, true);
-  std::cout << solver.eigenvalues().transpose() << std::endl;
+  float max_eigenvalue = -INFINITY;
+  Eigen::Matrix<float, 4, 1> max_eigenvector;
+  for (long i = 0; i < solver.eigenvalues().size(); i++) {
+    if (solver.eigenvalues()[i].real() > max_eigenvalue) {
+      max_eigenvalue = solver.eigenvalues()[i].real();
+      max_eigenvector = solver.eigenvectors().col(i).real();
+    }
+  }
 
+  Eigen::Matrix<float, 4, 1> s = 1./W * C2 * max_eigenvector;
+  Eigen::Matrix<float, 4, 1> t = Quat<float>(max_eigenvector).W().transpose() * s;
+
+  A.block(0, 0, 3, 3) = Quat<float>(max_eigenvector).Rot();
+  A.block(0, 3, 3, 1) = t.block(0, 0, 3, 1);
+  A.block(3, 0, 1, 4) << 0., 0., 0., 1.;
   return A;
 }
 

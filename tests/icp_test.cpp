@@ -2,6 +2,7 @@
 #include "icp.h"
 
 using namespace pcl;
+const float epsilon = 1e-4;
 
 int main(int argc, char* argv[]) {
   std::vector<std::vector<float>> ref_pts = {
@@ -12,11 +13,11 @@ int main(int argc, char* argv[]) {
      {6.3236, 9.6489, 8.0028}
   };
   std::vector<std::vector<float>> src_pts = {
-    { 8.2146,  3.5225,  2.5823},
-    {10.2007,  4.4064, 10.6738},
-    { 2.1986,  5.7739, 12.0774},
-    { 8.5051, 11.6792,  6.9475},
-    { 6.2768, 10.8903, 10.4448}
+    { 8.8294,  3.6256,  2.4910},
+    {10.8155,  4.5095, 10.5825},
+    { 2.8133,  5.8770, 11.9861},
+    { 9.1199, 11.7824,  6.8562},
+    { 6.8916, 10.9934, 10.3535}
   };
   std::vector<int> matched = {0, 1, 2, 3, 4};
 
@@ -43,5 +44,21 @@ int main(int argc, char* argv[]) {
   }
 
   Eigen::Matrix<float, 4, 4> m = localize(ref_cloud, src_cloud, matched);
+
+  bool passed=true;
+  for (size_t i=0; i<src_cloud.points.size(); i++) {
+    Eigen::Matrix<float, 4, 1> src_v;
+    src_v << 0.f, 0.f, 0.f, 1.f;
+    src_v.block(0, 0, 3, 1) = src_cloud.points[i].getVector3fMap();
+    Eigen::Matrix<float, 4, 1> ref_v;
+    ref_v << 0.f, 0.f, 0.f, 1.f;
+    ref_v.block(0, 0, 3, 1) = ref_cloud.points[i].getVector3fMap();
+    passed = passed && ((ref_v - m*src_v).norm() < epsilon);
+  }
+  if (!passed) {
+    std::cout << ":-( localize failed" << std::endl;
+  } else {
+    std::cout << ":-D localize passed" << std::endl;
+  }
 
 }
