@@ -1,7 +1,12 @@
 #include <iostream>
+#include <SceneGraph/SceneGraph.h>
+#include <pangolin/pangolin.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 #include "icp.h"
+
+#define W 1024
+#define H 768
 
 using namespace pcl;
 const float epsilon = 1e-4;
@@ -81,7 +86,7 @@ int main(int argc, char* argv[]) {
   }
   pcl::PointCloud<pcl::PointXYZ> real_ref_cloud(*real_cloud, cloud_i);
   for (size_t i=0; i<cloud_i.size(); i++) {
-    cloud_i[i] = i+cloud_i.size();
+    cloud_i[i] = i+2*cloud_i.size();
   }
   pcl::PointCloud<pcl::PointXYZ> real_src_cloud(*real_cloud, cloud_i);
 
@@ -89,25 +94,81 @@ int main(int argc, char* argv[]) {
 
   ICP(real_ref_cloud.makeShared(), real_src_cloud.makeShared(), Trs);
 
-  pcl::PointCloud<pcl::PointXYZRGB> out_cloud;
+  pcl::PointCloud<pcl::PointXYZ> out_cloud;
   out_cloud.height = 1;
   out_cloud.width = 307200 * 3;
   out_cloud.is_dense = false;
   out_cloud.resize(307200 * 3);
 
-  for (size_t i=0; i<real_src_cloud.points.size(); i++) {
-    out_cloud.points[0*307200 + i].rgb = 0x00ff0000;
+  for (size_t i=0; i<307200; i++) {
     out_cloud.points[0*307200 + i].getVector4fMap() =
       real_ref_cloud.points[i].getVector4fMap();
-
-    out_cloud.points[1*307200 + i].rgb = 0x0000ff00;
     out_cloud.points[1*307200 + i].getVector4fMap() = Trs *
-      real_ref_cloud.points[i].getVector4fMap();
-
-    out_cloud.points[2*307200 + i].rgb = 0x000000ff;
+      real_src_cloud.points[i].getVector4fMap();
     out_cloud.points[2*307200 + i].getVector4fMap() =
       real_src_cloud.points[i].getVector4fMap();
   }
 
   pcl::io::savePCDFileBinary("registeredclouds.pcd", out_cloud);
+
+  // start pangolin
+  pangolin::CreateWindowAndBind("Main", W, H);
+  SceneGraph::GLSceneGraph::ApplyPreferredGlSettings();
+  pangolin::View& base_view = pangolin::DisplayBase();
+
+  // create 3d view
+  pangolin::OpenGlRenderState stacks3d(
+      pangolin::ProjectionMatrix(640, 480, 420, 420, 320, 240, 1E-3, 10*1000),
+      pangolin::ModelViewLookAt(-10, 0, -16, 0, 0, 0, pangolin::AxisNegZ)
+      );
+  SceneGraph::GLSceneGraph glGraph;
+  pangolin::View threeD_view;
+
+  SceneGraph::GLGrid glGrid(150, 1);
+  glGraph.AddChild(&glGrid);
+  threeD_view.SetBounds(0.0, 1.0, 0.0, 1.0)
+    .SetHandler(new SceneGraph::HandlerSceneGraph(glGraph, stacks3d))
+    .SetDrawFunction(SceneGraph::ActivateDrawFunctor(glGraph, stacks3d));
+  base_view.AddDisplay(threeD_view);
+
+  // Reset background color to black.
+  glClearColor(0, 0, 0, 1);
+
+  // Point cloud GL object
+  // reference cloud: red
+  SceneGraph::GLCachedPrimitives glPCref(GL_POINTS, SceneGraph::GLColor(1.0f, 0.0f, 0.0f));
+  // transformed source cloud: blue
+  SceneGraph::GLCachedPrimitives glPCsrc(GL_POINTS, SceneGraph::GLColor(0.0f, 0.0f, 1.0f));
+  // original source cloud: light blue
+  SceneGraph::GLCachedPrimitives glPCsrr(GL_POINTS, SceneGraph::GLColor(0.7f, 0.7f, 1.0f));
+  glGraph.AddChild(&glPCref);
+  glGraph.AddChild(&glPCsrc);
+  glGraph.AddChild(&glPCsrr);
+
+  bool draw = true;
+
+  while (!pangolin::ShouldQuit()) {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glColor4f(1.0f,1.0f,1.0f,1.0f);
+
+    if (draw) {
+      glPCref.Clear();
+      glPCsrc.Clear();
+      glPCsrr.Clear();
+      for (uint32_t i = 0; i < 307200; i++){
+        glPCref.AddVertex(Eigen::Vector3d(out_cloud.points[0*307200 + i].x,
+              out_cloud.points[0*307200 + i].y, out_cloud.points[0*307200 +
+              i].z));
+        glPCsrc.AddVertex(Eigen::Vector3d(out_cloud.points[1*307200 + i].x,
+              out_cloud.points[1*307200 + i].y, out_cloud.points[1*307200 +
+              i].z));
+        glPCsrr.AddVertex(Eigen::Vector3d(out_cloud.points[2*307200 + i].x,
+              out_cloud.points[2*307200 + i].y, out_cloud.points[2*307200 +
+              i].z));
+      }
+      draw = false;
+    }
+
+    pangolin::FinishFrame();
+  }
 }

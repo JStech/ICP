@@ -32,7 +32,13 @@ target_link_libraries( dualquat_test dualquat )
 add_library( icp SHARED src/icp.cpp )
 add_executable( icp_test tests/icp_test.cpp )
 target_link_libraries( icp dualquat ${PCL_LIBRARIES} )
-target_link_libraries( icp_test dualquat icp ${PCL_LIBRARIES} )
+target_link_libraries( icp_test
+  dualquat
+  icp
+  ${PCL_LIBRARIES}
+  ${Pangolin_LIBRARIES}
+  ${SceneGraph_LIBRARIES}
+  )
 
 add_executable( main src/main.cpp )
 target_link_libraries( main icp dualquat ${PCL_LIBRARIES} )
