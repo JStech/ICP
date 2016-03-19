@@ -7,14 +7,53 @@
 #include "icp.h"
 #include "dualquat.h"
 #include <algorithm>
+#include <stdlib.h>
 #define MAX_ITER 40
 
 using namespace pcl;
 
 float choose_xi(std::vector<std::vector<float>> nearest_d,
     std::vector<int> matched) {
-  // TODO: implement this
-  return 100.0;
+  unsigned num_bins = 25;
+
+  // get estimate of max distance
+  float max = 0.f;
+  for (int n = 0; n<100; n++) {
+    int r = rand()%matched.size();
+    if (nearest_d[r][0] > max) {
+      max = nearest_d[r][0];
+    }
+  }
+  max *= 1.05;
+
+  // build histogram
+  std::vector<unsigned int> counts(num_bins+1, 0);
+  for (size_t i=0; i<matched.size(); i++) {
+    if (nearest_d[i][0] > max) {
+      counts[num_bins]++;
+    } else {
+      counts[(int)(num_bins*nearest_d[i][0]/max)]++;
+    }
+  }
+
+  // find biggest peak
+  unsigned peak = 0;
+  unsigned elevation = 0;
+  for (size_t i=0; i<num_bins+1; i++) {
+    if (counts[i] > elevation) {
+      peak = i;
+      elevation = counts[i];
+    }
+  }
+
+  // find first valley after peak (lower than 60% of peak height)
+  unsigned valley;
+  for (valley=peak+1; valley<num_bins; valley++) {
+    if (counts[valley] > elevation*0.6) continue;
+    if (counts[valley+1] > counts[valley]) break;
+  }
+
+  return ((float) valley)/((float) num_bins) * max;
 }
 
 Eigen::Matrix<float, 4, 4> localize(PointCloud<PointXYZ>::Ptr reference,
