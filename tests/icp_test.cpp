@@ -1,4 +1,6 @@
 #include <iostream>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
 #include "icp.h"
 
 using namespace pcl;
@@ -62,4 +64,50 @@ int main(int argc, char* argv[]) {
     std::cout << ":-D localize passed" << std::endl;
   }
 
+  if (argc < 2) return 0;
+
+  // open point cloud file
+  pcl::PointCloud<pcl::PointXYZ>::Ptr real_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+  if (pcl::io::loadPCDFile<pcl::PointXYZ>(argv[1], *real_cloud) == -1) {
+    std::cout << "Error reading file " << argv[1] << std::endl;
+    exit(1);
+  }
+  std::cout << "Read " << real_cloud->height << " clouds of " << real_cloud->width <<
+    " points." << std::endl;
+
+  std::vector<int> cloud_i(real_cloud->width);
+  for (size_t i=0; i<cloud_i.size(); i++) {
+    cloud_i[i] = i;
+  }
+  pcl::PointCloud<pcl::PointXYZ> real_ref_cloud(*real_cloud, cloud_i);
+  for (size_t i=0; i<cloud_i.size(); i++) {
+    cloud_i[i] = i+cloud_i.size();
+  }
+  pcl::PointCloud<pcl::PointXYZ> real_src_cloud(*real_cloud, cloud_i);
+
+  Eigen::Matrix<float, 4, 4> Trs = Eigen::Matrix<float, 4, 4>::Identity();
+
+  ICP(real_ref_cloud.makeShared(), real_src_cloud.makeShared(), Trs);
+
+  pcl::PointCloud<pcl::PointXYZRGB> out_cloud;
+  out_cloud.height = 1;
+  out_cloud.width = 307200 * 3;
+  out_cloud.is_dense = false;
+  out_cloud.resize(307200 * 3);
+
+  for (size_t i=0; i<real_src_cloud.points.size(); i++) {
+    out_cloud.points[0*307200 + i].rgb = 0x00ff0000;
+    out_cloud.points[0*307200 + i].getVector4fMap() =
+      real_ref_cloud.points[i].getVector4fMap();
+
+    out_cloud.points[1*307200 + i].rgb = 0x0000ff00;
+    out_cloud.points[1*307200 + i].getVector4fMap() = Trs *
+      real_ref_cloud.points[i].getVector4fMap();
+
+    out_cloud.points[2*307200 + i].rgb = 0x000000ff;
+    out_cloud.points[2*307200 + i].getVector4fMap() =
+      real_src_cloud.points[i].getVector4fMap();
+  }
+
+  pcl::io::savePCDFileBinary("registeredclouds.pcd", out_cloud);
 }

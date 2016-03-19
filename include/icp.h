@@ -5,7 +5,7 @@
 #include <sophus/se3.hpp>
 
 float ICP(pcl::PointCloud<pcl::PointXYZ>::Ptr reference,
-    pcl::PointCloud<pcl::PointXYZ>::Ptr source, Sophus::SE3d &Trs);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr source, Eigen::Matrix<float, 4, 4> &Trs);
 
 Eigen::Matrix<float, 4, 4> localize(pcl::PointCloud<pcl::PointXYZ>::Ptr reference,
     pcl::PointCloud<pcl::PointXYZ>::Ptr source, std::vector<int> matched);

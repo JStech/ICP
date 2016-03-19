@@ -1,13 +1,13 @@
 //#include "pcl/kdtree/impl/kdtree_flann.hpp"
-#include <pcl/kdtree/impl/kdtree_flann.hpp>
-#include <pcl/impl/point_types.hpp>
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <cmath>
 #include <Eigen/Eigenvalues>
 #include "icp.h"
 #include "dualquat.h"
 #include <algorithm>
-#define MAX_ITER 20
+#define MAX_ITER 40
 
 using namespace pcl;
 
@@ -61,7 +61,7 @@ Eigen::Matrix<float, 4, 4> localize(PointCloud<PointXYZ>::Ptr reference,
 // input: reference and source point clouds, prior SE3 transform guess
 // output: SE3 transform from source to reference, total error (of some sort TODO)
 float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
-    Sophus::SE3d &Trs) {
+    Eigen::Matrix<float, 4, 4> &Trs) {
 
   // initialize ICP parameters
   float D = 10.0;
@@ -78,14 +78,20 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
 
   std::vector<int> matched(source->size());
 
+  // transform source points according to prior Trs
+  for (size_t i=0; i<source->size(); i++) {
+    source->points[i].getVector4fMap() = Trs*source->points[i].getVector4fMap();
+  }
+
   for (int iter=0; iter < MAX_ITER; iter++) {
 
     // find closest points
     for (size_t i=0; i<source->size(); i++) {
-      if (kdtree.nearestKSearch(source->points[i], 1, nearest_i[i],
-            nearest_d[i]) == 0) {
-        nearest_i[i][0] = -1;
-        nearest_d[i][0] = 0.;
+      nearest_i[i][0] = -1;
+      nearest_d[i][0] = 0.;
+      if (!isnan(source->points[i].x)) {
+        kdtree.nearestKSearch(source->points[i], 1, nearest_i[i],
+            nearest_d[i]);
       }
     }
 
@@ -133,6 +139,9 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
     for (size_t i=0; i<source->points.size(); i++) {
       source->points[i].getVector4fMap() = T*source->points[i].getVector4fMap();
     }
+
+    // update Trs
+    Trs = T*Trs;
   }
 
   return 0.f;
