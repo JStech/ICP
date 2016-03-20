@@ -1,4 +1,3 @@
-//#include "pcl/kdtree/impl/kdtree_flann.hpp"
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
@@ -8,6 +7,10 @@
 #include "dualquat.h"
 #include <algorithm>
 #include <stdlib.h>
+#ifdef PROFILE
+#include <chrono>
+#include <iostream>
+#endif
 #define MAX_ITER 40
 
 using namespace pcl;
@@ -106,9 +109,22 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
   float D = 10.0;
   float Dmax = 20*D;
 
+#ifdef PROFILE
+  std::chrono::duration<uint64_t, std::micro> kdtree_build_time(0);
+  std::chrono::duration<uint64_t, std::micro> kdtree_search_time(0);
+  std::chrono::duration<uint64_t, std::micro> match_time(0);
+  std::chrono::duration<uint64_t, std::micro> localize_time(0);
+  std::chrono::duration<uint64_t, std::micro> update_time(0);
+  auto start = std::chrono::high_resolution_clock::now();
+#endif
   // build k-d tree
   KdTreeFLANN<PointXYZ> kdtree;
   kdtree.setInputCloud(reference);
+#ifdef PROFILE
+  auto stop = std::chrono::high_resolution_clock::now();
+  kdtree_build_time = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+  start = stop;
+#endif
 
   // vectors to receive nearest neighbors
   std::vector<std::vector<int>> nearest_i(source->size(), std::vector<int>(1));
@@ -133,6 +149,11 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
             nearest_d[i]);
       }
     }
+#ifdef PROFILE
+    stop = std::chrono::high_resolution_clock::now();
+    kdtree_search_time += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    start = stop;
+#endif
 
     // choose which matches to use
     float mu=0.;
@@ -170,10 +191,20 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
         matched[i] = -1;
       }
     }
+#ifdef PROFILE
+    stop = std::chrono::high_resolution_clock::now();
+    match_time += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    start = stop;
+#endif
 
     // compute motion
     Eigen::Matrix<float, 4, 4> T = localize(reference, source, matched);
 
+#ifdef PROFILE
+    stop = std::chrono::high_resolution_clock::now();
+    localize_time += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    start = stop;
+#endif
     // apply to all source points
     for (size_t i=0; i<source->points.size(); i++) {
       source->points[i].getVector4fMap() = T*source->points[i].getVector4fMap();
@@ -181,7 +212,20 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
 
     // update Trs
     Trs = T*Trs;
+#ifdef PROFILE
+    stop = std::chrono::high_resolution_clock::now();
+    update_time += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    start = stop;
+#endif
   }
+
+#ifdef PROFILE
+  std::cerr << "kdtree_build_time  " << kdtree_build_time.count() << std::endl;
+  std::cerr << "kdtree_search_time " << kdtree_search_time.count() << std::endl;
+  std::cerr << "match_time         " << match_time.count() << std::endl;
+  std::cerr << "localize_time      " << localize_time.count() << std::endl;
+  std::cerr << "update_time        " << update_time.count() << std::endl;
+#endif
 
   return 0.f;
 }
