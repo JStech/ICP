@@ -7,6 +7,8 @@
 #include "dualquat.h"
 #include <algorithm>
 #include <stdlib.h>
+#include <future>
+#include <thread>
 #ifdef PROFILE
 #include <chrono>
 #include <iostream>
@@ -14,6 +16,20 @@
 #define MAX_ITER 40
 
 using namespace pcl;
+
+void nearest_neighbors(std::vector<std::vector<int>>& nearest_i,
+    std::vector<std::vector<float>>& nearest_d,
+    pcl::PointCloud<pcl::PointXYZ>::Ptr source, KdTreeFLANN<PointXYZ>& kdtree,
+    size_t i, size_t j) {
+  for (; i<j; i++) {
+    nearest_i[i][0] = -1;
+    nearest_d[i][0] = 0.;
+    if (!isnan(source->points[i].x)) {
+      kdtree.nearestKSearch(source->points[i], 1, nearest_i[i],
+          nearest_d[i]);
+    }
+  }
+}
 
 float choose_xi(std::vector<std::vector<float>> nearest_d,
     std::vector<int> matched) {
@@ -141,14 +157,25 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
   for (int iter=0; iter < MAX_ITER; iter++) {
 
     // find closest points
-    for (size_t i=0; i<source->size(); i++) {
-      nearest_i[i][0] = -1;
-      nearest_d[i][0] = 0.;
-      if (!isnan(source->points[i].x)) {
-        kdtree.nearestKSearch(source->points[i], 1, nearest_i[i],
-            nearest_d[i]);
-      }
+    const int nthreads = 4;
+    std::thread threads[nthreads];
+    size_t step_size = (source->size() + nthreads - 1)/nthreads;
+
+    for (size_t i=0; i < nthreads-1; i += 1) {
+      threads[i] = std::thread(nearest_neighbors, nearest_i, nearest_d, source,
+          kdtree, i*step_size, (i+1)*step_size);
+      std::cout << "Thread " << i << " doing " << i*step_size << " - " <<
+        (i+1)*step_size << std::endl;
     }
+    threads[nthreads-1] = std::thread(nearest_neighbors, nearest_i, nearest_d, source,
+          kdtree, (nthreads-1)*step_size, source->size());
+    std::cout << "Thread " << nthreads-1 << " doing " << (nthreads-1)*step_size
+      << " - " << source->size() << std::endl;
+
+    for (size_t i=0; i < nthreads; i += 1) {
+      threads[i].join();
+    }
+
 #ifdef PROFILE
     stop = std::chrono::high_resolution_clock::now();
     kdtree_search_time += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);

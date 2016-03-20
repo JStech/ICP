@@ -11,6 +11,7 @@ find_package(HAL REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(SceneGraph REQUIRED)
 find_package(PCL REQUIRED)
+find_package(Threads REQUIRED)
 
 include_directories( ${Calibu_INCLUDE_DIRS} )
 include_directories( ${HAL_INCLUDE_DIRS} )
@@ -39,6 +40,7 @@ target_link_libraries( icp_test
   ${PCL_LIBRARIES}
   ${Pangolin_LIBRARIES}
   ${SceneGraph_LIBRARIES}
+  ${CMAKE_THREAD_LIBS_INIT}
   )
 
 add_executable( main src/main.cpp )
