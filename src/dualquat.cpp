@@ -38,6 +38,20 @@ Quat<T>& Quat<T>::Identity() {
 }
 
 template <typename T>
+T Quat<T>::Angle() const {
+  return 2.*acos(fabs(this->w));
+}
+
+template <typename T>
+Eigen::Vector3d Quat<T>::RotAxis() const {
+  double theta = 2.*acos(this->w);
+  Eigen::Vector3d r(this->x, this->y, this->z);
+  r = r/r.norm();
+  r = theta * r;
+  return r;
+}
+
+template <typename T>
 Quat<T> Quat<T>::conjugate() const {
   return Quat<T>(this->w, -this->x, -this->y, -this->z);
 }

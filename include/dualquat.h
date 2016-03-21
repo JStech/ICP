@@ -33,6 +33,8 @@ class Quat {
     Eigen::Matrix<T, 4, 4> R() const;
     Eigen::Matrix<T, 3, 3> Rot() const;
     Quat& Identity();
+    T Angle() const;
+    Eigen::Vector3d RotAxis() const;
 
     Quat& operator+=(const Quat& rhs) {
       this->w += rhs.w; this->x += rhs.x; this->y += rhs.y; this->z += rhs.z;

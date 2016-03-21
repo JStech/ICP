@@ -106,6 +106,9 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
   float D = 10.0;
   float Dmax = 20*D;
 
+  // transformations calculated at each iteration
+  DualQuat<float> T;
+
 #ifdef PROFILE
   std::chrono::duration<uint64_t, std::micro> kdtree_build_time(0);
   std::chrono::duration<uint64_t, std::micro> kdtree_search_time(0);
@@ -196,9 +199,7 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
 #endif
 
     // compute motion
-    DualQuat<float> T_last;
-    DualQuat<float> T = localize(reference, source, matched);
-    Eigen::Matrix<float, 4, 4> Tmat = T.Matrix();
+    T = localize(reference, source, matched);
 
 #ifdef PROFILE
     stop = std::chrono::high_resolution_clock::now();
@@ -206,21 +207,28 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
     start = stop;
 #endif
     // apply to all source points
+    Eigen::Matrix<float, 4, 4> Tmat = T.Matrix();
     for (size_t i=0; i<source->points.size(); i++) {
       source->points[i].getVector4fMap() = Tmat*source->points[i].getVector4fMap();
     }
 
     // update Trs
     Trs = Tmat*Trs;
+
+    // check stopping criteria
+    float dt = T.getTranslation().norm();
+    float dth = T.r.Angle();
+
 #ifdef PROFILE
-    float trace = Tmat(0, 0) + Tmat(1, 1) + Tmat(2, 2);
-    float theta = acos(0.5*(trace - 1));
-    std::cerr << "Iteration " << iter << " dT " << Eigen::Vector3f(Tmat.block(0,
-          3, 3, 1)).norm() << ", dTh " << theta << std::endl;
+    std::cerr << "Iteration " << iter << " dt " << dt << ", dtheta " << dth <<
+      std::endl;
     stop = std::chrono::high_resolution_clock::now();
     update_time += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     start = stop;
 #endif
+    if (iter > 0 && dt < 0.01 && dth < 0.01) {
+      break;
+    }
   }
 
 #ifdef PROFILE
