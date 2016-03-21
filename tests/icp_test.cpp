@@ -50,18 +50,13 @@ int main(int argc, char* argv[]) {
     src_cloud.points[i].z = src_pts[i][2];
   }
 
-  Eigen::Matrix<float, 4, 4> m = localize(ref_cloud.makeShared(),
-      src_cloud.makeShared(), matched);
+  Eigen::Matrix<float, 4, 4> m = localize(ref_cloud.makeShared(), src_cloud.makeShared(),
+      matched).Matrix();
 
   bool passed=true;
   for (size_t i=0; i<src_cloud.points.size(); i++) {
-    Eigen::Matrix<float, 4, 1> src_v;
-    src_v << 0.f, 0.f, 0.f, 1.f;
-    src_v.block(0, 0, 3, 1) = src_cloud.points[i].getVector3fMap();
-    Eigen::Matrix<float, 4, 1> ref_v;
-    ref_v << 0.f, 0.f, 0.f, 1.f;
-    ref_v.block(0, 0, 3, 1) = ref_cloud.points[i].getVector3fMap();
-    passed = passed && ((ref_v - m*src_v).norm() < epsilon);
+    passed = passed && ((ref_cloud.points[i].getVector4fMap() -
+          m*src_cloud.points[i].getVector4fMap()).norm() < epsilon);
   }
   if (!passed) {
     std::cout << ":-( localize failed" << std::endl;

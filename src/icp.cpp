@@ -60,7 +60,7 @@ float choose_xi(std::vector<std::vector<float>> nearest_d,
   return ((float) valley)/((float) num_bins) * max;
 }
 
-Eigen::Matrix<float, 4, 4> localize(PointCloud<PointXYZ>::Ptr reference,
+DualQuat<float> localize(PointCloud<PointXYZ>::Ptr reference,
     PointCloud<PointXYZ>::Ptr source, std::vector<int> matched) {
   // Compute matrices C1, C2, C3
   Eigen::Matrix<float, 4, 4> C1 = Eigen::Matrix<float, 4, 4>::Zero();
@@ -77,7 +77,7 @@ Eigen::Matrix<float, 4, 4> localize(PointCloud<PointXYZ>::Ptr reference,
   }
 
   C1 *= -2;
-  C2 *= -2;
+  C2 *= 2;
 
   Eigen::Matrix<float, 4, 4> A = .5 * (0.5/W * C2.transpose() * C2 - C1 - C1.transpose());
 
@@ -92,13 +92,9 @@ Eigen::Matrix<float, 4, 4> localize(PointCloud<PointXYZ>::Ptr reference,
     }
   }
 
-  Eigen::Matrix<float, 4, 1> s = 1./W * C2 * max_eigenvector;
-  Eigen::Matrix<float, 4, 1> t = Quat<float>(max_eigenvector).W().transpose() * s;
-
-  A.block(0, 0, 3, 3) = Quat<float>(max_eigenvector).Rot();
-  A.block(0, 3, 3, 1) = t.block(0, 0, 3, 1);
-  A.block(3, 0, 1, 4) << 0., 0., 0., 1.;
-  return A;
+  Quat<float> real(max_eigenvector);
+  Quat<float> dual(-0.5/W * C2*max_eigenvector);
+  return DualQuat<float>(real, dual);
 }
 
 // input: reference and source point clouds, prior SE3 transform guess
@@ -200,7 +196,9 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
 #endif
 
     // compute motion
-    Eigen::Matrix<float, 4, 4> T = localize(reference, source, matched);
+    DualQuat<float> T_last;
+    DualQuat<float> T = localize(reference, source, matched);
+    Eigen::Matrix<float, 4, 4> Tmat = T.Matrix();
 
 #ifdef PROFILE
     stop = std::chrono::high_resolution_clock::now();
@@ -209,15 +207,15 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
 #endif
     // apply to all source points
     for (size_t i=0; i<source->points.size(); i++) {
-      source->points[i].getVector4fMap() = T*source->points[i].getVector4fMap();
+      source->points[i].getVector4fMap() = Tmat*source->points[i].getVector4fMap();
     }
 
     // update Trs
-    Trs = T*Trs;
+    Trs = Tmat*Trs;
 #ifdef PROFILE
-    float trace = T(0, 0) + T(1, 1) + T(2, 2);
+    float trace = Tmat(0, 0) + Tmat(1, 1) + Tmat(2, 2);
     float theta = acos(0.5*(trace - 1));
-    std::cerr << "Iteration " << iter << " dT " << Eigen::Vector3f(T.block(0,
+    std::cerr << "Iteration " << iter << " dT " << Eigen::Vector3f(Tmat.block(0,
           3, 3, 1)).norm() << ", dTh " << theta << std::endl;
     stop = std::chrono::high_resolution_clock::now();
     update_time += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);

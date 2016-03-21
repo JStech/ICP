@@ -4,11 +4,11 @@
 
 template <typename T>
 Quat<T>::Quat(pcl::PointXYZ p) {
-  this->w = 0.;
+  this->w = (T) 0.;
   this->x = (T) p.x;
   this->y = (T) p.y;
   this->z = (T) p.z;
-  *this *= 0.5;
+  *this *= (T) 0.5;
 }
 
 template <typename T>
@@ -32,15 +32,14 @@ Quat<T>::Quat(Eigen::Matrix<T, 4, 1> vector) {
 
 template <typename T>
 Quat<T>& Quat<T>::Identity() {
-  this->w = 1.0;
-  this->x = this->y = this->z = 0.0;
+  this->w = (T) 1.0;
+  this->x = this->y = this->z = (T) 0.0;
   return *this;
 }
 
 template <typename T>
-Quat<T>& Quat<T>::conjugate() {
-  this->x = -this->x; this->y = -this->y; this->z = -this->z;
-  return *this;
+Quat<T> Quat<T>::conjugate() const {
+  return Quat<T>(this->w, -this->x, -this->y, -this->z);
 }
 
 template <typename T>
@@ -122,10 +121,8 @@ DualQuat<T>& DualQuat<T>::Identity() {
 }
 
 template <typename T>
-DualQuat<T>& DualQuat<T>::conjugate() {
-  this->r = this->r.conjugate();
-  this->d = this->d.conjugate();
-  return *this;
+DualQuat<T> DualQuat<T>::conjugate() const {
+  return DualQuat<T>(this->r.conjugate(), this->d.conjugate());
 }
 
 template <typename T>
@@ -147,15 +144,16 @@ void DualQuat<T>::normalize() {
 }
 
 template <typename T>
-Eigen::Matrix<T, 4, 4> DualQuat<T>::Matrix() {
+Eigen::Matrix<T, 4, 4> DualQuat<T>::Matrix() const {
   Eigen::Matrix<T, 4, 4> out = this->r.W().transpose()*this->r.Q();
+  out.block(0, 3, 3, 1) = (this->getTranslation()).template cast<T>();
   return out;
 }
 
 template <typename T>
 Eigen::Vector3d DualQuat<T>::getTranslation() const {
-  Quat<T> r = this->r;
-  Quat<T> t = 2.f*this->d*r.conjugate();
+  Quat<T> t = this->r.conjugate();
+  t = (((T) 2.)*this->d)*t;
   Eigen::Vector3d ret(t.x, t.y, t.z);
   return ret;
 }

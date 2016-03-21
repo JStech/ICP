@@ -15,7 +15,7 @@ class Quat {
       };
     };
 
-    Quat() {};
+    Quat() : x((T) 0.), y((T) 0.), z((T) 0.), w((T) 0.) {};
     Quat(T w, T x, T y, T z) :
       x(x), y(y), z(z), w(w) {}
     Quat(T vector[4]) :
@@ -23,6 +23,16 @@ class Quat {
     Quat(pcl::PointXYZ p);
     Quat(Eigen::Vector3d vector, T rotation_radians);
     Quat(Eigen::Matrix<T, 4, 1> vector);
+
+    Quat conjugate() const;
+    T magnitude() const;
+    void normalize();
+    Eigen::Matrix<T, 3, 3> K() const;
+    Eigen::Matrix<T, 4, 4> Q() const;
+    Eigen::Matrix<T, 4, 4> W() const;
+    Eigen::Matrix<T, 4, 4> R() const;
+    Eigen::Matrix<T, 3, 3> Rot() const;
+    Quat& Identity();
 
     Quat& operator+=(const Quat& rhs) {
       this->w += rhs.w; this->x += rhs.x; this->y += rhs.y; this->z += rhs.z;
@@ -86,16 +96,6 @@ class Quat {
       return lhs;
     }
 
-    Quat& conjugate();
-    T magnitude() const;
-    void normalize();
-    Eigen::Matrix<T, 3, 3> K() const;
-    Eigen::Matrix<T, 4, 4> Q() const;
-    Eigen::Matrix<T, 4, 4> W() const;
-    Eigen::Matrix<T, 4, 4> R() const;
-    Eigen::Matrix<T, 3, 3> Rot() const;
-    Quat& Identity();
-
     friend std::ostream& operator<<(std::ostream& os, const Quat& rhs) {
       return os << rhs.w << " + " << rhs.x << "i + " << rhs.y << "j + " <<
         rhs.z << "k";
@@ -124,9 +124,17 @@ class DualQuat {
     Quat<T> r;
     Quat<T> d;
 
-    DualQuat() {}
+    DualQuat() : r(Quat<T>()), d(Quat<T>()) {}
     DualQuat(Quat<T> r, Quat<T> d) : r(r), d(d) {}
     DualQuat(pcl::PointXYZ point);
+
+    DualQuat conjugate() const;
+    T realMagnitude() const;
+    T sumSq() const;
+    void normalize();
+    Eigen::Matrix<T, 4, 4> Matrix() const;
+    DualQuat& Identity();
+    Eigen::Vector3d getTranslation() const;
 
     DualQuat& operator+=(const DualQuat& rhs) {
       this->r += rhs.r;
@@ -170,14 +178,6 @@ class DualQuat {
       lhs *= rhs;
       return lhs;
     }
-
-    DualQuat& conjugate();
-    T realMagnitude() const;
-    T sumSq() const;
-    void normalize();
-    Eigen::Matrix<T, 4, 4> Matrix();
-    DualQuat& Identity();
-    Eigen::Vector3d getTranslation() const;
 
     friend std::ostream& operator<<(std::ostream& os, const DualQuat& rhs) {
       return os << "(" << rhs.r << ") + (" << rhs.d << ")e";
