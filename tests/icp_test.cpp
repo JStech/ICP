@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
   // transformed source cloud: blue
   SceneGraph::GLCachedPrimitives glPCsrc(GL_POINTS, SceneGraph::GLColor(0.0f, 0.0f, 1.0f));
   // original source cloud: light blue
-  SceneGraph::GLCachedPrimitives glPCsrr(GL_POINTS, SceneGraph::GLColor(0.7f, 0.7f, 1.0f));
+  SceneGraph::GLCachedPrimitives glPCsrr(GL_POINTS, SceneGraph::GLColor(0.2f, 0.2f, 0.4f));
   glGraph.AddChild(&glPCref);
   glGraph.AddChild(&glPCsrc);
   glGraph.AddChild(&glPCsrr);

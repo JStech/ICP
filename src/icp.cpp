@@ -215,6 +215,10 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
     // update Trs
     Trs = T*Trs;
 #ifdef PROFILE
+    float trace = T(0, 0) + T(1, 1) + T(2, 2);
+    float theta = acos(0.5*(trace - 1));
+    std::cerr << "Iteration " << iter << " dT " << Eigen::Vector3f(T.block(0,
+          3, 3, 1)).norm() << ", dTh " << theta << std::endl;
     stop = std::chrono::high_resolution_clock::now();
     update_time += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     start = stop;
