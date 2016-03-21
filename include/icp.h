@@ -6,7 +6,8 @@
 #include "dualquat.h"
 
 float ICP(pcl::PointCloud<pcl::PointXYZ>::Ptr reference,
-    pcl::PointCloud<pcl::PointXYZ>::Ptr source, Eigen::Matrix<float, 4, 4> &Trs);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr source,
+    Eigen::Matrix<float, 4, 4> &Trs, float D = 10.0, std::vector<bool> *matched=NULL);
 
 DualQuat<float> localize(pcl::PointCloud<pcl::PointXYZ>::Ptr reference,
     pcl::PointCloud<pcl::PointXYZ>::Ptr source, std::vector<int> matched);

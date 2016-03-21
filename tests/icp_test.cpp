@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
     { 9.1199, 11.7824,  6.8562},
     { 6.8916, 10.9934, 10.3535}
   };
-  std::vector<int> matched = {0, 1, 2, 3, 4};
+  std::vector<int> match_i = {0, 1, 2, 3, 4};
 
   PointCloud<PointXYZ> ref_cloud;
   PointCloud<PointXYZ> src_cloud;
@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
   }
 
   Eigen::Matrix<float, 4, 4> m = localize(ref_cloud.makeShared(), src_cloud.makeShared(),
-      matched).Matrix();
+      match_i).Matrix();
 
   bool passed=true;
   for (size_t i=0; i<src_cloud.points.size(); i++) {
@@ -87,7 +87,8 @@ int main(int argc, char* argv[]) {
 
   Eigen::Matrix<float, 4, 4> Trs = Eigen::Matrix<float, 4, 4>::Identity();
 
-  ICP(real_ref_cloud.makeShared(), real_src_cloud.makeShared(), Trs);
+  std::vector<bool> matched;
+  ICP(real_ref_cloud.makeShared(), real_src_cloud.makeShared(), Trs, 10.0, &matched);
 
   pcl::PointCloud<pcl::PointXYZ> out_cloud;
   out_cloud.height = 1;
@@ -134,10 +135,13 @@ int main(int argc, char* argv[]) {
   SceneGraph::GLCachedPrimitives glPCref(GL_POINTS, SceneGraph::GLColor(1.0f, 0.0f, 0.0f));
   // transformed source cloud: blue
   SceneGraph::GLCachedPrimitives glPCsrc(GL_POINTS, SceneGraph::GLColor(0.0f, 0.0f, 1.0f));
-  // original source cloud: light blue
-  SceneGraph::GLCachedPrimitives glPCsrr(GL_POINTS, SceneGraph::GLColor(0.2f, 0.2f, 0.4f));
+  // unmatched source cloud: light blue
+  SceneGraph::GLCachedPrimitives glPCsru(GL_POINTS, SceneGraph::GLColor(0.6f, 0.6f, 1.0f));
+  // original source cloud: dark gray
+  SceneGraph::GLCachedPrimitives glPCsrr(GL_POINTS, SceneGraph::GLColor(0.3f, 0.3f, 0.3f));
   glGraph.AddChild(&glPCref);
   glGraph.AddChild(&glPCsrc);
+  glGraph.AddChild(&glPCsru);
   glGraph.AddChild(&glPCsrr);
 
   bool draw = true;
@@ -149,14 +153,21 @@ int main(int argc, char* argv[]) {
     if (draw) {
       glPCref.Clear();
       glPCsrc.Clear();
+      glPCsru.Clear();
       glPCsrr.Clear();
       for (uint32_t i = 0; i < 307200; i++){
         glPCref.AddVertex(Eigen::Vector3d(out_cloud.points[0*307200 + i].x,
               out_cloud.points[0*307200 + i].y, out_cloud.points[0*307200 +
               i].z));
-        glPCsrc.AddVertex(Eigen::Vector3d(out_cloud.points[1*307200 + i].x,
-              out_cloud.points[1*307200 + i].y, out_cloud.points[1*307200 +
-              i].z));
+        if (matched[i]) {
+          glPCsrc.AddVertex(Eigen::Vector3d(out_cloud.points[1*307200 + i].x,
+                out_cloud.points[1*307200 + i].y, out_cloud.points[1*307200 +
+                i].z));
+        } else {
+          glPCsru.AddVertex(Eigen::Vector3d(out_cloud.points[1*307200 + i].x,
+                out_cloud.points[1*307200 + i].y, out_cloud.points[1*307200 +
+                i].z));
+        }
         glPCsrr.AddVertex(Eigen::Vector3d(out_cloud.points[2*307200 + i].x,
               out_cloud.points[2*307200 + i].y, out_cloud.points[2*307200 +
               i].z));

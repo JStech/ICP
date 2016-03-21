@@ -17,13 +17,13 @@
 using namespace pcl;
 
 float choose_xi(std::vector<std::vector<float>> nearest_d,
-    std::vector<int> matched) {
+    std::vector<int> match_i) {
   unsigned num_bins = 25;
 
   // get estimate of max distance
   float max = 0.f;
   for (int n = 0; n<100; n++) {
-    int r = rand()%matched.size();
+    int r = rand()%match_i.size();
     if (nearest_d[r][0] > max) {
       max = nearest_d[r][0];
     }
@@ -32,7 +32,7 @@ float choose_xi(std::vector<std::vector<float>> nearest_d,
 
   // build histogram
   std::vector<unsigned int> counts(num_bins+1, 0);
-  for (size_t i=0; i<matched.size(); i++) {
+  for (size_t i=0; i<match_i.size(); i++) {
     if (nearest_d[i][0] > max) {
       counts[num_bins]++;
     } else {
@@ -61,18 +61,18 @@ float choose_xi(std::vector<std::vector<float>> nearest_d,
 }
 
 DualQuat<float> localize(PointCloud<PointXYZ>::Ptr reference,
-    PointCloud<PointXYZ>::Ptr source, std::vector<int> matched) {
+    PointCloud<PointXYZ>::Ptr source, std::vector<int> match_i) {
   // Compute matrices C1, C2, C3
   Eigen::Matrix<float, 4, 4> C1 = Eigen::Matrix<float, 4, 4>::Zero();
   Eigen::Matrix<float, 4, 4> C2 = Eigen::Matrix<float, 4, 4>::Zero();
 
   float W = 0.;
-  for (size_t i=0; i<matched.size(); i++) {
-    if (matched[i]<0) continue;
-    C1 += Quat<float>(reference->points[matched[i]]).Q().transpose() *
+  for (size_t i=0; i<match_i.size(); i++) {
+    if (match_i[i]<0) continue;
+    C1 += Quat<float>(reference->points[match_i[i]]).Q().transpose() *
       Quat<float>(source->points[i]).W();
     C2 += Quat<float>(source->points[i]).W() -
-      Quat<float>(reference->points[matched[i]]).Q();
+      Quat<float>(reference->points[match_i[i]]).Q();
     W += 1.;
   }
 
@@ -100,10 +100,9 @@ DualQuat<float> localize(PointCloud<PointXYZ>::Ptr reference,
 // input: reference and source point clouds, prior SE3 transform guess
 // output: SE3 transform from source to reference, total error (of some sort TODO)
 float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
-    Eigen::Matrix<float, 4, 4> &Trs) {
+    Eigen::Matrix<float, 4, 4> &Trs, float D, std::vector<bool> *matched) {
 
   // initialize ICP parameters
-  float D = 10.0;
   float Dmax = 20*D;
 
   // transformations calculated at each iteration
@@ -131,7 +130,7 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
   std::vector<std::vector<float>> nearest_d(source->size(),
       std::vector<float>(1));
 
-  std::vector<int> matched(source->size());
+  std::vector<int> match_i(source->size());
 
   // transform source points according to prior Trs
   for (size_t i=0; i<source->size(); i++) {
@@ -144,7 +143,7 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
 #pragma omp parallel for
     for (size_t i=0; i<source->size(); i++) {
       nearest_i[i][0] = -1;
-      nearest_d[i][0] = 0.;
+      nearest_d[i][0] = INFINITY;
       if (!isnan(source->points[i].x)) {
         kdtree.nearestKSearch(source->points[i], 1, nearest_i[i],
             nearest_d[i]);
@@ -163,11 +162,11 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
 
     for (size_t i=0; i<source->size(); i++) {
       if (nearest_d[i][0] < Dmax) {
-        matched[i] = nearest_i[i][0];
+        match_i[i] = nearest_i[i][0];
         mu += nearest_d[i][0];
         sigma += nearest_d[i][0]*nearest_d[i][0];
       } else {
-        matched[i] = -1;
+        match_i[i] = -1;
       }
       n++;
     }
@@ -182,14 +181,25 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
     } else if (mu < 6*D) {
       Dmax = mu + sigma;
     } else {
-      Dmax = choose_xi(nearest_d, matched);
+      Dmax = choose_xi(nearest_d, match_i);
     }
 
+#ifdef PROFILE
+    int matched_n = 0;
+    int tot_n = 0;
+#endif
     for (size_t i=0; i<source->size(); i++) {
       if (nearest_d[i][0] < Dmax) {
-        matched[i] = nearest_i[i][0];
+        match_i[i] = nearest_i[i][0];
+#ifdef PROFILE
+        matched_n++;
+        tot_n++;
+#endif
       } else {
-        matched[i] = -1;
+        match_i[i] = -1;
+#ifdef PROFILE
+        if (!isnan(source->points[i].x)) tot_n++;
+#endif
       }
     }
 #ifdef PROFILE
@@ -199,7 +209,7 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
 #endif
 
     // compute motion
-    T = localize(reference, source, matched);
+    T = localize(reference, source, match_i);
 
 #ifdef PROFILE
     stop = std::chrono::high_resolution_clock::now();
@@ -221,13 +231,20 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
 
 #ifdef PROFILE
     std::cerr << "Iteration " << iter << " dt " << dt << ", dtheta " << dth <<
-      std::endl;
+      ", matched " << matched_n << "/" << tot_n << std::endl;
     stop = std::chrono::high_resolution_clock::now();
     update_time += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     start = stop;
 #endif
     if (iter > 0 && dt < 0.01 && dth < 0.01) {
       break;
+    }
+  }
+
+  if (matched != NULL) {
+    matched->resize(match_i.size());
+    for (size_t i = 0; i<match_i.size(); i++) {
+      (*matched)[i] = match_i[i]>0;
     }
   }
 
