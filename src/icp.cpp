@@ -7,6 +7,7 @@
 #include "dualquat.h"
 #include <algorithm>
 #include <stdlib.h>
+#include <omp.h>
 #ifdef PROFILE
 #include <chrono>
 #include <iostream>
@@ -141,6 +142,7 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
   for (int iter=0; iter < MAX_ITER; iter++) {
 
     // find closest points
+#pragma omp parallel for
     for (size_t i=0; i<source->size(); i++) {
       nearest_i[i][0] = -1;
       nearest_d[i][0] = 0.;
