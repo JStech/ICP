@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
         depth *= std::sqrt(focal_length*focal_length + (i/w - h/2)*(i/w - h/2)
             + (i%w - w/2)*(i%w - w/2));
         depth /= 10.;
-        point = depth * rig->cameras_[1]->Unproject(pixel);
+        point = -depth * rig->cameras_[1]->Unproject(pixel);
 
         // append to point cloud
         cloud.points[i+cloud.height*h*w].x = point(0);

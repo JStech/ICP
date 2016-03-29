@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
       real_src_cloud.points[i].getVector4fMap();
   }
 
-  pcl::io::savePCDFileBinary("registeredclouds.pcd", out_cloud);
+  //pcl::io::savePCDFileBinary("registeredclouds.pcd", out_cloud);
 
   // start pangolin
   pangolin::CreateWindowAndBind("Main", W, H);
@@ -128,7 +128,7 @@ int main(int argc, char* argv[]) {
   // create 3d view
   pangolin::OpenGlRenderState stacks3d(
       pangolin::ProjectionMatrix(640, 480, 420, 420, 320, 240, 1E-3, 10*1000),
-      pangolin::ModelViewLookAt(-10, 0, -16, 0, 0, 0, pangolin::AxisNegZ)
+      pangolin::ModelViewLookAt(10, 0, 16, 0, 0, 0, pangolin::AxisNegZ)
       );
   SceneGraph::GLSceneGraph glGraph;
   pangolin::View threeD_view;
@@ -149,7 +149,7 @@ int main(int argc, char* argv[]) {
   // transformed source cloud: blue
   SceneGraph::GLCachedPrimitives glPCsrc(GL_POINTS, SceneGraph::GLColor(0.0f, 0.0f, 1.0f));
   // unmatched source cloud: light blue
-  SceneGraph::GLCachedPrimitives glPCsru(GL_POINTS, SceneGraph::GLColor(0.6f, 0.6f, 1.0f));
+  SceneGraph::GLCachedPrimitives glPCsru(GL_POINTS, SceneGraph::GLColor(0.5f, 0.5f, 1.0f));
   // original source cloud: dark gray
   SceneGraph::GLCachedPrimitives glPCsrr(GL_POINTS, SceneGraph::GLColor(0.3f, 0.3f, 0.3f));
   glGraph.AddChild(&glPCref);
