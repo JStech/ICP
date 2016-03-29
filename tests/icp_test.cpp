@@ -66,6 +66,19 @@ int main(int argc, char* argv[]) {
 
   if (argc < 2) return 0;
 
+  int f1 = 0;
+  int f2 = 1;
+
+  if (argc > 2) {
+    f1 = atoi(argv[2]);
+  }
+
+  if (argc > 3) {
+    f2 = atoi(argv[3]);
+  } else {
+    f2 = f1+1;
+  }
+
   // open point cloud file
   pcl::PointCloud<pcl::PointXYZ>::Ptr real_cloud(new pcl::PointCloud<pcl::PointXYZ>);
   if (pcl::io::loadPCDFile<pcl::PointXYZ>(argv[1], *real_cloud) == -1) {
@@ -77,11 +90,11 @@ int main(int argc, char* argv[]) {
 
   std::vector<int> cloud_i(real_cloud->width);
   for (size_t i=0; i<cloud_i.size(); i++) {
-    cloud_i[i] = i;
+    cloud_i[i] = i + f1*cloud_i.size();
   }
   pcl::PointCloud<pcl::PointXYZ> real_ref_cloud(*real_cloud, cloud_i);
   for (size_t i=0; i<cloud_i.size(); i++) {
-    cloud_i[i] = i+2*cloud_i.size();
+    cloud_i[i] = i+f2*cloud_i.size();
   }
   pcl::PointCloud<pcl::PointXYZ> real_src_cloud(*real_cloud, cloud_i);
 
