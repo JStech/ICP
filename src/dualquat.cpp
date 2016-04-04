@@ -31,6 +31,17 @@ Quat<T>::Quat(Eigen::Matrix<T, 4, 1> vector) {
 }
 
 template <typename T>
+Quat<T> Quat<T>::fromRotationMatrix(Eigen::Matrix<T, 3, 3> m) {
+  Quat<T> q;
+  q.w = sqrt(1. + m(0, 0) + m(1, 1) + m(2, 2))/2.;
+  T w4 = 4.*q.w;
+  q.x = (m(2, 1) - m(1, 2))/w4;
+  q.y = (m(0, 2) - m(2, 0))/w4;
+  q.z = (m(1, 0) - m(0, 1))/w4;
+  return q;
+}
+
+template <typename T>
 Quat<T>& Quat<T>::Identity() {
   this->w = (T) 1.0;
   this->x = this->y = this->z = (T) 0.0;

@@ -23,6 +23,7 @@ class Quat {
     Quat(pcl::PointXYZ p);
     Quat(Eigen::Vector3d vector, T rotation_radians);
     Quat(Eigen::Matrix<T, 4, 1> vector);
+    static Quat fromRotationMatrix(Eigen::Matrix<T, 3, 3> m);
 
     Quat conjugate() const;
     T magnitude() const;

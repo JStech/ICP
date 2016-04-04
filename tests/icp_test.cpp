@@ -102,6 +102,11 @@ int main(int argc, char* argv[]) {
 
   std::vector<bool> matched;
   ICP(real_ref_cloud.makeShared(), real_src_cloud.makeShared(), Trs, 10.0, &matched);
+  Eigen::Matrix<float, 4, 4> Tsr = Eigen::Matrix<float, 4, 4>::Identity();
+  Tsr.block(0, 0, 3, 3) = Trs.block(0, 0, 3, 3).transpose();
+  Tsr.block(0, 3, 3, 1) = -Tsr.block(0, 0, 3, 3) * Trs.block(0, 3, 3, 1);
+  std::cout << Quat<float>::fromRotationMatrix(Tsr.block(0, 0, 3, 3)) << "  ";
+  std::cout << Tsr.block(0, 3, 3, 1).transpose() << std::endl;
 
   pcl::PointCloud<pcl::PointXYZ> out_cloud;
   out_cloud.height = 1;
