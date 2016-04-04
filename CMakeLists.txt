@@ -35,6 +35,10 @@ add_library( dualquat SHARED src/dualquat.cpp )
 add_executable( dualquat_test tests/dualquat_test.cpp )
 target_link_libraries( dualquat_test dualquat )
 
+add_library( kdtree SHARED src/kdtree.cpp )
+add_executable( kdtree_test tests/kdtree_test.cpp )
+target_link_libraries( kdtree_test kdtree )
+
 add_library( icp SHARED src/icp.cpp )
 add_executable( icp_test tests/icp_test.cpp )
 target_link_libraries( icp dualquat ${PCL_LIBRARIES} )
