@@ -7,16 +7,22 @@
   t = (p1).x; (p1).x = (p2).x; (p2).x = t;\
   t = (p1).y; (p1).y = (p2).y; (p2).y = t;\
   t = (p1).z; (p1).z = (p2).z; (p2).z = t;}
+#define printpoint(p) std::setw(4) << (p).x << " " << std::setw(4) << (p).y \
+  << " " << std::setw(4) << (p).z
+#define printpoints(p) {\
+  for (size_t i=0; i<(p).size(); i++) {\
+    std::cerr << printpoint((p)[i]) << std::endl;\
+  }}
 
 typedef std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> point_vector;
 
 class KDTree {
-  static float select(point_vector points, int dim, size_t start, size_t end,
+  public:
+  static float select(point_vector& points, int dim, size_t start, size_t end,
       size_t k);
-  void build_tree(point_vector &points, size_t start, size_t end,
+  void build_tree(point_vector& points, size_t start, size_t end,
       unsigned depth);
 
-  public:
     unsigned depth;
     float bound;
     KDTree* left;
