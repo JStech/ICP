@@ -2,6 +2,7 @@
 #define KDTREE_H
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
+#include <iomanip>
 #define swap(p1, p2) \
 {float t;\
   t = (p1).x; (p1).x = (p2).x; (p2).x = t;\
@@ -18,17 +19,19 @@ typedef std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> poin
 
 class KDTree {
   public:
-  static float select(point_vector& points, int dim, size_t start, size_t end,
-      size_t k);
-  void build_tree(point_vector& points, size_t start, size_t end,
-      unsigned depth);
+    static float select(point_vector& points, int dim, size_t start, size_t end,
+        size_t k);
+    void build_tree(KDTree* root, point_vector& points, size_t start, size_t end,
+        unsigned depth);
 
     unsigned depth;
     float bound;
     KDTree* left;
     KDTree* right;
+    KDTree* root;
+    point_vector points;
 
-    KDTree() : depth(0), bound(0.f), left(NULL), right(NULL) {}
+    KDTree() : depth(0), bound(0.f), left(NULL), right(NULL), root(NULL) {}
 
     void setInputCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
     void nearestKSearch(pcl::PointXYZ point, int k, std::vector<int> nearest_i,
@@ -37,6 +40,11 @@ class KDTree {
 };
 
 std::ostream& operator<<(std::ostream &strm, const KDTree &kdtree) {
+  if (kdtree.depth == 0) {
+    for (size_t i=0; i<kdtree.points.size(); i++) {
+      strm << printpoint(kdtree.points[i]) << std::endl;
+    }
+  }
   for (unsigned int i=0; i<kdtree.depth; i++) {
     strm << " ";
   }
