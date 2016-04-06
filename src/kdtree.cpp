@@ -10,26 +10,24 @@
 // depth%3 (if subarray is of odd length, the extra element goes before the
 // partition); then recurses on subarrays;
 // sets this->bound to be the largest value of the smaller subarray
-void KDTree::build_tree(KDTree *root, point_vector &points, size_t start, size_t end,
+void KDTree::build_tree(point_vector &points, size_t start, size_t end,
     unsigned depth) {
-  size_t left_size = (end - start + 1)/2;
-  size_t right_size = (end - start) - left_size;
-  this->root = root;
+  size_t median = (end - start)/2 + start;
   this->depth = depth;
-  this->bound = KDTree::select(points, depth%3, start, end, start+left_size-1);
-  if (left_size > 1) {
-    this->left = new KDTree();
-    this->left->build_tree(root, points, start, start+left_size, depth+1);
+  this->bound = KDTree::select(points, depth%3, start, end, median);
+  this->point = points[median];
+  if (median-start > 0) {
+    this->l = new KDTree();
+    this->l->build_tree(points, start, median, depth+1);
   }
-  if (right_size > 1) {
-    this->right = new KDTree();
-    this->right->build_tree(root, points, start+left_size, end, depth+1);
+  if (end-(median+1) > 0) {
+    this->r = new KDTree();
+    this->r->build_tree(points, median+1, end, depth+1);
   }
 }
 
 void KDTree::setInputCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud) {
-  this->points = cloud->points;
-  this->build_tree(this, this->points, 0, cloud->points.size(), 0);
+  this->build_tree(cloud->points, 0, cloud->points.size(), 0);
 }
 
 // select point at (sorted) absolute position k (and place it there),

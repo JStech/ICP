@@ -59,22 +59,22 @@ int main(int argc, char* argv[]) {
 
   kdtree.setInputCloud(cloud.makeShared());
 
-  if (!(kdtree.points[ 0].x ==  5 && kdtree.points[ 0].y == 10 && kdtree.points[ 0].z ==  2)) std::cerr << "build_tree point selection failed  0" << std::endl;
-  if (!(kdtree.points[ 1].x ==  6 && kdtree.points[ 1].y ==  9 && kdtree.points[ 1].z ==  1)) std::cerr << "build_tree point selection failed  1" << std::endl;
-  if (!(kdtree.points[ 2].x ==  4 && kdtree.points[ 2].y == 11 && kdtree.points[ 2].z ==  8)) std::cerr << "build_tree point selection failed  2" << std::endl;
-  if (!(kdtree.points[ 3].x ==  7 && kdtree.points[ 3].y ==  8 && kdtree.points[ 3].z ==  7)) std::cerr << "build_tree point selection failed  3" << std::endl;
-  if (!(kdtree.points[ 4].x ==  1 && kdtree.points[ 4].y == 14 && kdtree.points[ 4].z ==  4)) std::cerr << "build_tree point selection failed  4" << std::endl;
-  if (!(kdtree.points[ 5].x ==  2 && kdtree.points[ 5].y == 13 && kdtree.points[ 5].z ==  9)) std::cerr << "build_tree point selection failed  5" << std::endl;
-  if (!(kdtree.points[ 6].x ==  0 && kdtree.points[ 6].y == 15 && kdtree.points[ 6].z == 13)) std::cerr << "build_tree point selection failed  6" << std::endl;
-  if (!(kdtree.points[ 7].x ==  3 && kdtree.points[ 7].y == 12 && kdtree.points[ 7].z == 14)) std::cerr << "build_tree point selection failed  7" << std::endl;
-  if (!(kdtree.points[ 8].x == 12 && kdtree.points[ 8].y ==  3 && kdtree.points[ 8].z == 10)) std::cerr << "build_tree point selection failed  8" << std::endl;
-  if (!(kdtree.points[ 9].x == 13 && kdtree.points[ 9].y ==  2 && kdtree.points[ 9].z ==  0)) std::cerr << "build_tree point selection failed  9" << std::endl;
-  if (!(kdtree.points[10].x == 14 && kdtree.points[10].y ==  1 && kdtree.points[10].z == 11)) std::cerr << "build_tree point selection failed 10" << std::endl;
-  if (!(kdtree.points[11].x == 15 && kdtree.points[11].y ==  0 && kdtree.points[11].z == 12)) std::cerr << "build_tree point selection failed 11" << std::endl;
-  if (!(kdtree.points[12].x ==  8 && kdtree.points[12].y ==  7 && kdtree.points[12].z ==  5)) std::cerr << "build_tree point selection failed 12" << std::endl;
-  if (!(kdtree.points[13].x ==  9 && kdtree.points[13].y ==  6 && kdtree.points[13].z ==  3)) std::cerr << "build_tree point selection failed 13" << std::endl;
-  if (!(kdtree.points[14].x == 10 && kdtree.points[14].y ==  5 && kdtree.points[14].z == 15)) std::cerr << "build_tree point selection failed 14" << std::endl;
-  if (!(kdtree.points[15].x == 11 && kdtree.points[15].y ==  4 && kdtree.points[15].z ==  6)) std::cerr << "build_tree point selection failed 15" << std::endl;
+  if (!(kdtree.point.x ==  8 && kdtree.point.y ==  7 && kdtree.point.z ==  5)) std::cerr << "build_tree failed root" << std::endl;
+  if (!(kdtree.l->point.x ==  3 && kdtree.l->point.y == 12 && kdtree.l->point.z == 14)) std::cerr << "build_tree failed l" << std::endl;
+  if (!(kdtree.r->point.x == 12 && kdtree.r->point.y ==  3 && kdtree.r->point.z == 10)) std::cerr << "build_tree failed r" << std::endl;
+  if (!(kdtree.l->l->point.x ==  7 && kdtree.l->l->point.y ==  8 && kdtree.l->l->point.z ==  7)) std::cerr << "build_tree failed ll" << std::endl;
+  if (!(kdtree.l->r->point.x ==  2 && kdtree.l->r->point.y == 13 && kdtree.l->r->point.z ==  9)) std::cerr << "build_tree failed lr" << std::endl;
+  if (!(kdtree.r->l->point.x == 14 && kdtree.r->l->point.y ==  1 && kdtree.r->l->point.z == 11)) std::cerr << "build_tree failed rl" << std::endl;
+  if (!(kdtree.r->r->point.x == 11 && kdtree.r->r->point.y ==  4 && kdtree.r->r->point.z ==  6)) std::cerr << "build_tree failed rr" << std::endl;
+  if (!(kdtree.l->l->l->point.x ==  6 && kdtree.l->l->l->point.y ==  9 && kdtree.l->l->l->point.z ==  1)) std::cerr << "build_tree failed lll" << std::endl;
+  if (!(kdtree.l->l->r->point.x ==  4 && kdtree.l->l->r->point.y == 11 && kdtree.l->l->r->point.z ==  8)) std::cerr << "build_tree failed llr" << std::endl;
+  if (!(kdtree.l->r->l->point.x ==  1 && kdtree.l->r->l->point.y == 14 && kdtree.l->r->l->point.z ==  4)) std::cerr << "build_tree failed lrl" << std::endl;
+  if (!(kdtree.l->r->r->point.x ==  0 && kdtree.l->r->r->point.y == 15 && kdtree.l->r->r->point.z == 13)) std::cerr << "build_tree failed lrr" << std::endl;
+  if (!(kdtree.r->l->l->point.x == 13 && kdtree.r->l->l->point.y ==  2 && kdtree.r->l->l->point.z ==  0)) std::cerr << "build_tree failed rll" << std::endl;
+  if (!(kdtree.r->l->r->point.x == 15 && kdtree.r->l->r->point.y ==  0 && kdtree.r->l->r->point.z == 12)) std::cerr << "build_tree failed rlr" << std::endl;
+  if (!(kdtree.r->r->l->point.x ==  9 && kdtree.r->r->l->point.y ==  6 && kdtree.r->r->l->point.z ==  3)) std::cerr << "build_tree failed rrl" << std::endl;
+  if (!(kdtree.r->r->r->point.x == 10 && kdtree.r->r->r->point.y ==  5 && kdtree.r->r->r->point.z == 15)) std::cerr << "build_tree failed rrr" << std::endl;
+  if (!(kdtree.l->l->l->l->point.x ==  5 && kdtree.l->l->l->l->point.y == 10 && kdtree.l->l->l->l->point.z ==  2)) std::cerr << "build_tree failed llll" << std::endl;
 
   int n = strtol(argv[1], NULL, 10);
   cloud.resize(n);
