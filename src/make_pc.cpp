@@ -8,6 +8,8 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 
+#define dspix(i, w, ds) ((ds)*((i)%((w)/(ds))) + ((i)/((w)/(ds)))*(ds)*(w))
+
 int main(int argc, char *argv[])
 {
   // check arguments
@@ -55,7 +57,7 @@ int main(int argc, char *argv[])
   Eigen::Vector3d point;
 
   pcl::PointCloud<pcl::PointXYZ> cloud;
-  unsigned points_per_frame = w*h/downsample;
+  unsigned points_per_frame = (w/downsample)*(h/downsample);
   cloud.width = points_per_frame;
   cloud.height = 0;
   cloud.is_dense = false;
@@ -73,7 +75,7 @@ int main(int argc, char *argv[])
 
       cloud.points.resize(cloud.width*(cloud.height+1));
       for (unsigned i=0; i<points_per_frame; i++) {
-        if (d_img[i] == 0) {
+        if (d_img[dspix(i, w, downsample)] == 0) {
           cloud.points[i+cloud.height*points_per_frame].x =
             cloud.points[i+cloud.height*points_per_frame].y =
             cloud.points[i+cloud.height*points_per_frame].z =
@@ -81,11 +83,11 @@ int main(int argc, char *argv[])
           continue;
         }
         // unproject depth
-        pixel(0) = (float) ((downsample*i)/w);
+        pixel(0) = (float) (downsample*((downsample*i)/w));
         pixel(1) = (float) ((downsample*i)%w);
-        float depth = d_img[downsample*i] / 10000.0;
-        depth *= std::sqrt(focal_length*focal_length + ((downsample*i)/w - h/2)*((downsample*i)/w - h/2)
-            + ((downsample*i)%w - w/2)*((downsample*i)%w - w/2));
+        float depth = d_img[dspix(i, w, downsample)] / 10000.0;
+        depth *= std::sqrt(focal_length*focal_length + (pixel(0) - h/2)*(pixel(0) - h/2)
+            + (pixel(1) - w/2)*(pixel(1) - w/2));
         depth /= 10.;
         point = -depth * rig->cameras_[1]->Unproject(pixel);
 
