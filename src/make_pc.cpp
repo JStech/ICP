@@ -11,9 +11,13 @@
 int main(int argc, char *argv[])
 {
   // check arguments
-  if (argc != 3) {
+  if (argc < 3 || argc > 4) {
     std::cout << "Usage: " << argv[0] << " /path/to/cameras.xml 'scheme:///path/to/stereo/data'" << std::endl;
     return 1;
+  }
+  int downsample = 1;
+  if (argc == 4) {
+    downsample = strtol(argv[3], NULL, 10);
   }
 
   // read cameras.xml, get baseline
@@ -51,7 +55,8 @@ int main(int argc, char *argv[])
   Eigen::Vector3d point;
 
   pcl::PointCloud<pcl::PointXYZ> cloud;
-  cloud.width = w*h;
+  unsigned points_per_frame = w*h/downsample;
+  cloud.width = points_per_frame;
   cloud.height = 0;
   cloud.is_dense = false;
 
@@ -67,27 +72,27 @@ int main(int argc, char *argv[])
       depth_view.SetImage(d_img, w, h, GL_LUMINANCE, GL_LUMINANCE, GL_UNSIGNED_SHORT);
 
       cloud.points.resize(cloud.width*(cloud.height+1));
-      for (unsigned i=0; i<h*w; i++) {
+      for (unsigned i=0; i<points_per_frame; i++) {
         if (d_img[i] == 0) {
-          cloud.points[i+cloud.height*h*w].x =
-            cloud.points[i+cloud.height*h*w].y =
-            cloud.points[i+cloud.height*h*w].z =
+          cloud.points[i+cloud.height*points_per_frame].x =
+            cloud.points[i+cloud.height*points_per_frame].y =
+            cloud.points[i+cloud.height*points_per_frame].z =
             std::numeric_limits<float>::quiet_NaN();
           continue;
         }
         // unproject depth
-        pixel(0) = (float) (i/w);
-        pixel(1) = (float) (i%w);
-        float depth = d_img[i] / 10000.0;
-        depth *= std::sqrt(focal_length*focal_length + (i/w - h/2)*(i/w - h/2)
-            + (i%w - w/2)*(i%w - w/2));
+        pixel(0) = (float) ((downsample*i)/w);
+        pixel(1) = (float) ((downsample*i)%w);
+        float depth = d_img[downsample*i] / 10000.0;
+        depth *= std::sqrt(focal_length*focal_length + ((downsample*i)/w - h/2)*((downsample*i)/w - h/2)
+            + ((downsample*i)%w - w/2)*((downsample*i)%w - w/2));
         depth /= 10.;
         point = -depth * rig->cameras_[1]->Unproject(pixel);
 
         // append to point cloud
-        cloud.points[i+cloud.height*h*w].x = point(0);
-        cloud.points[i+cloud.height*h*w].y = point(1);
-        cloud.points[i+cloud.height*h*w].z = point(2);
+        cloud.points[i+cloud.height*points_per_frame].x = point(0);
+        cloud.points[i+cloud.height*points_per_frame].y = point(1);
+        cloud.points[i+cloud.height*points_per_frame].z = point(2);
       }
       cloud.height++;
     }

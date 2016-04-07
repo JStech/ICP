@@ -1,4 +1,5 @@
-#include <pcl/kdtree/kdtree_flann.h>
+//#include <pcl/kdtree/kdtree_flann.h>
+#include "kdtree.h"
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <cmath>
@@ -117,7 +118,8 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
   auto start = std::chrono::high_resolution_clock::now();
 #endif
   // build k-d tree
-  KdTreeFLANN<PointXYZ> kdtree;
+  //KdTreeFLANN<PointXYZ> kdtree;
+  KDTree kdtree;
   kdtree.setInputCloud(reference);
 #ifdef PROFILE
   auto stop = std::chrono::high_resolution_clock::now();
