@@ -55,8 +55,9 @@ int main(int argc, char* argv[]) {
   if (!(kdtree.r->r->r->point.x == 10 && kdtree.r->r->r->point.y ==  5 && kdtree.r->r->r->point.z == 15)) std::cout << "build_tree failed rrr" << std::endl;
   if (!(kdtree.l->l->l->l->point.x ==  5 && kdtree.l->l->l->l->point.y == 10 && kdtree.l->l->l->l->point.z ==  2)) std::cout << "build_tree failed llll" << std::endl;
 
-  cloud.resize(100);
-  for (int i=0; i<100; i++) {
+  int num_points = 100;
+  cloud.resize(num_points);
+  for (int i=0; i<num_points; i++) {
     cloud.points[i].x = (100. * rand())/RAND_MAX;
     cloud.points[i].y = (100. * rand())/RAND_MAX;
     cloud.points[i].z = (100. * rand())/RAND_MAX;
@@ -73,12 +74,17 @@ int main(int argc, char* argv[]) {
   kdtree.setInputCloud(cloud.makeShared());
   kdtree.nearestKSearch(test_point, 1, nearest_i, nearest_d);
 
-  for (int i=0; i<100; i++) {
-    if (sqrt(dist2(test_point, cloud.points[i])) < nearest_d[0]) {
+  for (int i=0; i<num_points; i++) {
+    if (sqrt(dist2(test_point, cloud.points[i])) < nearest_d[0] &&
+        i != nearest_i[0] ) {
       std::cout << "Nearest neighbor search failed" << std::endl;
       std::cout << sqrt(dist2(test_point, cloud.points[i])) << " " << nearest_d[0] <<
-        std::endl;
+        std::endl << std::endl;
+      std::cout << printpoint(test_point) << std::endl;
       std::cout << i << " " << nearest_i[0] << std::endl;
+      std::cout << kdtree << std::endl;
+      printpoints(cloud.points);
+      break;
     }
   }
 

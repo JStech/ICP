@@ -8,70 +8,77 @@
 // depth%3 (if subarray is of odd length, the extra element goes before the
 // partition); then recurses on subarrays;
 // sets this->bound to be the largest value of the smaller subarray
-void KDTree::build_tree(point_vector &points, size_t start, size_t end,
-    unsigned depth) {
+void KDTree::build_tree(point_vector points, std::vector<int>& indices,
+    size_t start, size_t end, unsigned depth) {
   size_t median = (end - start)/2 + start;
   this->depth = depth;
-  this->bound = KDTree::select(points, depth%3, start, end, median);
-  this->point = points[median];
-  this->point_i = points[median].data[3];
+  this->bound = KDTree::select(points, indices, depth%3, start, end, median);
+  this->point = points[indices[median]];
+  this->point_i = indices[median];
   if (median-start > 0) {
     this->l = new KDTree();
-    this->l->build_tree(points, start, median, depth+1);
+    this->l->build_tree(points, indices, start, median, depth+1);
   }
   if (end-(median+1) > 0) {
     this->r = new KDTree();
-    this->r->build_tree(points, median+1, end, depth+1);
+    this->r->build_tree(points, indices, median+1, end, depth+1);
   }
 }
 
 void KDTree::setInputCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud) {
-  point_vector v = cloud->points;
+  std::vector<int> indices;
+  indices.resize(cloud->points.size());
   for (int i=0; i<(int) cloud->points.size(); i++) {
-    v[i].data[3] = i;
+    indices[i] = i;
   }
-  this->build_tree(v, 0, cloud->points.size(), 0);
+  this->build_tree(cloud->points, indices, 0, cloud->points.size(), 0);
 }
 
 // select point at (sorted) absolute position k (and place it there),
 // considering only points between start (included) and end (excluded); it is
 // assumed that points less than start/greater than or equal to end are known
 // to be less than/greater than position k
-float KDTree::select(point_vector& points, int dim, size_t start, size_t end,
-    size_t k) {
+float KDTree::select(point_vector points, std::vector<int>& indices, int dim,
+    size_t start, size_t end, size_t k) {
   if (start+1==end) {
-    if (start==k) return points[start].data[dim];
+    if (start==k) return points[indices[start]].data[dim];
     else {
       // this shouldn't happen
       exit(255);
     }
   }
   size_t pivot = start + rand()%(end - start);
-  swap(points[pivot], points[start]);
+  int t = indices[pivot];
+  indices[pivot] = indices[start];
+  indices[start] = t;
 
   size_t i = start+1;
   size_t j = end-1;
   while (i < j) {
-    if (points[i].data[dim] < points[start].data[dim]) {
+    if (points[indices[i]].data[dim] < points[indices[start]].data[dim]) {
       i++;
     } else {
-      swap(points[i], points[j]);
+      t = indices[i];
+      indices[i] = indices[j];
+      indices[j] = t;
       j--;
     }
   }
 
   // make i point to last element smaller than pivot
-  if (points[i].data[dim] > points[start].data[dim]) {
+  if (points[indices[i]].data[dim] > points[indices[start]].data[dim]) {
     i--;
   }
-  swap(points[i], points[start]);
+  t = indices[i];
+  indices[i] = indices[start];
+  indices[start] = t;
 
   if (i==k) {
-    return points[i].data[dim];
+    return points[indices[i]].data[dim];
   } else if (i<k) {
-    return KDTree::select(points, dim, i+1, end, k);
+    return KDTree::select(points, indices, dim, i+1, end, k);
   } else {
-    return KDTree::select(points, dim, start, i, k);
+    return KDTree::select(points, indices, dim, start, i, k);
   }
 }
 
@@ -79,29 +86,31 @@ float KDTree::select(point_vector& points, int dim, size_t start, size_t end,
 void KDTree::search(pcl::PointXYZ target_point, KDTree* node,
       int& nearest_i, float& nearest_d2) {
   if (node == NULL) return;
-  // leaf node
-  if (node->l == NULL && node->r == NULL) {
-    float d2 = dist2(target_point, node->point);
-    if (d2 < nearest_d2) {
-      nearest_d2 = d2;
-      nearest_i = node->point_i;
+
+  int dim = node->depth%3;
+  float xyz = target_point.data[dim];
+
+  if (xyz < node->bound) {
+    // search left subtree first
+    search(target_point, node->l, nearest_i, nearest_d2);
+    if ((xyz - node->bound)*(xyz - node->bound) < nearest_d2) {
+      float d2 = dist2(target_point, node->point);
+      if (d2 < nearest_d2) {
+        nearest_d2 = d2;
+        nearest_i = node->point_i;
+      }
+      search(target_point, node->r, nearest_i, nearest_d2);
     }
   } else {
-    int dim = node->depth%3;
-    float xyz = target_point.data[dim];
-
-    if (xyz < node->bound) {
-      // search left subtree first
+    // search right subtree first
+    search(target_point, node->r, nearest_i, nearest_d2);
+    if ((xyz - node->bound)*(xyz - node->bound) < nearest_d2) {
+      float d2 = dist2(target_point, node->point);
+      if (d2 < nearest_d2) {
+        nearest_d2 = d2;
+        nearest_i = node->point_i;
+      }
       search(target_point, node->l, nearest_i, nearest_d2);
-      if ((xyz - node->bound)*(xyz - node->bound) < nearest_d2) {
-        search(target_point, node->r, nearest_i, nearest_d2);
-      }
-    } else {
-      // search right subtree first
-      search(target_point, node->r, nearest_i, nearest_d2);
-      if ((xyz - node->bound)*(xyz - node->bound) < nearest_d2) {
-        search(target_point, node->l, nearest_i, nearest_d2);
-      }
     }
   }
 }

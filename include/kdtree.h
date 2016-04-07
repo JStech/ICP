@@ -3,11 +3,6 @@
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <iomanip>
-#define swap(p1, p2) \
-{float t;\
-  t = (p1).x; (p1).x = (p2).x; (p2).x = t;\
-  t = (p1).y; (p1).y = (p2).y; (p2).y = t;\
-  t = (p1).z; (p1).z = (p2).z; (p2).z = t;}
 #define printpoint(p) std::setw(4) << (p).x << " " << std::setw(4) << (p).y \
   << " " << std::setw(4) << (p).z
 #define printpoints(p) {\
@@ -22,10 +17,10 @@
 typedef std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> point_vector;
 
 class KDTree {
-  static float select(point_vector& points, int dim, size_t start, size_t end,
-      size_t k);
-  void build_tree(point_vector& points, size_t start, size_t end,
-      unsigned depth);
+  static float select(point_vector points, std::vector<int>& indices, int dim,
+      size_t start, size_t end, size_t k);
+  void build_tree(point_vector points, std::vector<int>& indices, size_t start,
+      size_t end, unsigned depth);
   void search(pcl::PointXYZ target_point, KDTree* node,
       int& nearest_i, float& nearest_d2);
 
