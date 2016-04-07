@@ -1,8 +1,6 @@
 #include "kdtree.h"
 #include <cstdlib>
-#include <iostream> // TODO: remove this when done debugging
-#include <iomanip>  // ditto
-#include <stdio.h>  // ditto
+#include <math.h>
 
 /////// recursive tree-building function
 // considers the subarray of points between start (included) and end (excluded)
@@ -16,6 +14,7 @@ void KDTree::build_tree(point_vector &points, size_t start, size_t end,
   this->depth = depth;
   this->bound = KDTree::select(points, depth%3, start, end, median);
   this->point = points[median];
+  this->point_i = points[median].data[3];
   if (median-start > 0) {
     this->l = new KDTree();
     this->l->build_tree(points, start, median, depth+1);
@@ -27,7 +26,11 @@ void KDTree::build_tree(point_vector &points, size_t start, size_t end,
 }
 
 void KDTree::setInputCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud) {
-  this->build_tree(cloud->points, 0, cloud->points.size(), 0);
+  point_vector v = cloud->points;
+  for (int i=0; i<(int) cloud->points.size(); i++) {
+    v[i].data[3] = i;
+  }
+  this->build_tree(v, 0, cloud->points.size(), 0);
 }
 
 // select point at (sorted) absolute position k (and place it there),
@@ -72,7 +75,46 @@ float KDTree::select(point_vector& points, int dim, size_t start, size_t end,
   }
 }
 
-void KDTree::nearestKSearch(pcl::PointXYZ point, int k, std::vector<int> nearest_i,
-        std::vector<float> nearest_d) {
-  // TODO
+// http://andrewd.ces.clemson.edu/courses/cpsc805/references/nearest_search.pdf
+void KDTree::search(pcl::PointXYZ target_point, KDTree* node,
+      int& nearest_i, float& nearest_d2) {
+  if (node == NULL) return;
+  // leaf node
+  if (node->l == NULL && node->r == NULL) {
+    float d2 = dist2(target_point, node->point);
+    if (d2 < nearest_d2) {
+      nearest_d2 = d2;
+      nearest_i = node->point_i;
+    }
+  } else {
+    int dim = node->depth%3;
+    float xyz = target_point.data[dim];
+
+    if (xyz < node->bound) {
+      // search left subtree first
+      search(target_point, node->l, nearest_i, nearest_d2);
+      if ((xyz - node->bound)*(xyz - node->bound) < nearest_d2) {
+        search(target_point, node->r, nearest_i, nearest_d2);
+      }
+    } else {
+      // search right subtree first
+      search(target_point, node->r, nearest_i, nearest_d2);
+      if ((xyz - node->bound)*(xyz - node->bound) < nearest_d2) {
+        search(target_point, node->l, nearest_i, nearest_d2);
+      }
+    }
+  }
+}
+
+void KDTree::nearestKSearch(pcl::PointXYZ point, int k, std::vector<int>& nearest_i,
+        std::vector<float>& nearest_d) {
+  // just implementing 1-nearest neighbor, but keeping the argument to match
+  // PCL's KDTree interface
+  if (k!=1) return;
+
+  nearest_i.resize(1);
+  nearest_d.resize(1);
+  nearest_d[0] = INFINITY;
+  this->search(point, this, nearest_i[0], nearest_d[0]);
+  nearest_d[0] = sqrt(nearest_d[0]);
 }

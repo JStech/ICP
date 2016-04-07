@@ -14,27 +14,34 @@
   for (size_t i=0; i<(p).size(); i++) {\
     std::cerr << printpoint((p)[i]) << std::endl;\
   }}
+#define dist2(p1, p2) \
+  (((p1).x - (p2).x)*((p1).x - (p2).x) + \
+   ((p1).y - (p2).y)*((p1).y - (p2).y) + \
+   ((p1).z - (p2).z)*((p1).z - (p2).z))
 
 typedef std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> point_vector;
 
 class KDTree {
-  public:
-    static float select(point_vector& points, int dim, size_t start, size_t end,
-        size_t k);
-    void build_tree(point_vector& points, size_t start, size_t end,
-        unsigned depth);
+  static float select(point_vector& points, int dim, size_t start, size_t end,
+      size_t k);
+  void build_tree(point_vector& points, size_t start, size_t end,
+      unsigned depth);
+  void search(pcl::PointXYZ target_point, KDTree* node,
+      int& nearest_i, float& nearest_d2);
 
+  public:
     unsigned depth;
     float bound;
     pcl::PointXYZ point;
+    int point_i;
     KDTree* l;
     KDTree* r;
 
     KDTree() : depth(0), bound(0.f), l(NULL), r(NULL) {}
 
     void setInputCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
-    void nearestKSearch(pcl::PointXYZ point, int k, std::vector<int> nearest_i,
-        std::vector<float> nearest_d);
+    void nearestKSearch(pcl::PointXYZ point, int k, std::vector<int>& nearest_i,
+        std::vector<float>& nearest_d);
 
 };
 
