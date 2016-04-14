@@ -8,45 +8,52 @@
 // depth%3 (if subarray is of odd length, the extra element goes before the
 // partition); then recurses on subarrays;
 // sets this->bound to be the largest value of the smaller subarray
-void KDTree::build_tree(point_vector points, std::vector<int>& indices,
-    size_t start, size_t end, unsigned depth) {
-  size_t median = (end - start)/2 + start;
+void KDTree::build_tree(point_vector points,
+    std::vector<std::vector<int>>& indices, std::vector<bool> active,
+    size_t n, unsigned depth) {
   this->depth = depth;
-  this->bound = KDTree::select(points, indices, depth%3, start, end, median);
-  this->point = points[indices[median]];
-  this->point_i = indices[median];
-  if (median-start > 0) {
-    this->l = new KDTree();
-    this->l->build_tree(points, indices, start, median, depth+1);
-  }
-  if (end-(median+1) > 0) {
-    this->r = new KDTree();
-    this->r->build_tree(points, indices, median+1, end, depth+1);
-  }
-}
 
-void KDTree::setInputCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud) {
-  std::vector<int> indices;
-  indices.resize(cloud->points.size());
-  for (int i=0; i<(int) cloud->points.size(); i++) {
-    indices[i] = i;
-  }
-  this->build_tree(cloud->points, indices, 0, cloud->points.size(), 0);
-}
+  int median = n/2;
+  std::vector<bool> left_active(active.size(), false);
+  size_t left_n = 0;
+  std::vector<bool> right_active(active.size(), false);
+  size_t right_n = 0;
 
-// select point at (sorted) absolute position k (and place it there),
-// considering only points between start (included) and end (excluded); it is
-// assumed that points less than start/greater than or equal to end are known
-// to be less than/greater than position k
-float KDTree::select(point_vector points, std::vector<int>& indices, int dim,
-    size_t start, size_t end, size_t k) {
-  if (start+1==end) {
-    if (start==k) return points[indices[start]].data[dim];
-    else {
-      // this shouldn't happen
-      exit(255);
+  int c=0;
+  for (size_t i=0; i<points.size(); i++) {
+    if (!active[indices[depth%3][i]]) continue;
+    if (c<median) {
+      left_active[indices[depth%3][i]] = true;
+      left_n++;
+    } else if (c == median) {
+      this->point = points[indices[depth%3][i]];
+      this->point_i = indices[depth%3][i];
+      this->bound = points[indices[depth%3][i]].data[depth%3];
+      active[indices[depth%3][i]] = false;
+    } else {
+      right_active[indices[depth%3][i]] = true;
+      right_n++;
     }
+    c++;
   }
+
+  if (left_n > 0) {
+    this->l = new KDTree();
+    this->l->build_tree(points, indices, left_active, left_n, depth+1);
+  }
+  if (right_n > 0) {
+    this->r = new KDTree();
+    this->r->build_tree(points, indices, right_active, right_n, depth+1);
+  }
+}
+
+// sort points along dimension dim
+void KDTree::presort(point_vector points, std::vector<int>& indices,
+    size_t start, size_t end, int dim) {
+  if (start+1 >= end) {
+    return;
+  }
+
   size_t pivot = start + rand()%(end - start);
   int t = indices[pivot];
   indices[pivot] = indices[start];
@@ -54,7 +61,7 @@ float KDTree::select(point_vector points, std::vector<int>& indices, int dim,
 
   size_t i = start+1;
   size_t j = end-1;
-  while (i < j) {
+  while (i<j) {
     if (points[indices[i]].data[dim] < points[indices[start]].data[dim]) {
       i++;
     } else {
@@ -65,7 +72,6 @@ float KDTree::select(point_vector points, std::vector<int>& indices, int dim,
     }
   }
 
-  // make i point to last element smaller than pivot
   if (points[indices[i]].data[dim] > points[indices[start]].data[dim]) {
     i--;
   }
@@ -73,13 +79,22 @@ float KDTree::select(point_vector points, std::vector<int>& indices, int dim,
   indices[i] = indices[start];
   indices[start] = t;
 
-  if (i==k) {
-    return points[indices[i]].data[dim];
-  } else if (i<k) {
-    return KDTree::select(points, indices, dim, i+1, end, k);
-  } else {
-    return KDTree::select(points, indices, dim, start, i, k);
+  KDTree::presort(points, indices, start, i, dim);
+  KDTree::presort(points, indices, i+1, end, dim);
+}
+
+void KDTree::setInputCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud) {
+  std::vector<std::vector<int>> indices(3);
+  int n = cloud->points.size();
+  for (int dim=0; dim<3; dim++) {
+    indices[dim].resize(n);
+    for (int i=0; i<n; i++) {
+      indices[dim][i] = i;
+    }
+    this->presort(cloud->points, indices[dim], 0, n, dim);
   }
+  std::vector<bool> active(n, true);
+  this->build_tree(cloud->points, indices, active, n, 0);
 }
 
 // http://andrewd.ces.clemson.edu/courses/cpsc805/references/nearest_search.pdf
