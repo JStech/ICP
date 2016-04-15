@@ -8,7 +8,7 @@
 // depth%3 (if subarray is of odd length, the extra element goes before the
 // partition); then recurses on subarrays;
 // sets this->bound to be the largest value of the smaller subarray
-void KDTree::build_tree(point_vector points, std::vector<int>& indices,
+void KDTree::build_tree(point_vector& points, std::vector<int>& indices,
     size_t start, size_t end, unsigned depth) {
   size_t median = (end - start)/2 + start;
   this->depth = depth;
@@ -38,7 +38,7 @@ void KDTree::setInputCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud) {
 // considering only points between start (included) and end (excluded); it is
 // assumed that points less than start/greater than or equal to end are known
 // to be less than/greater than position k
-float KDTree::select(point_vector points, std::vector<int>& indices, int dim,
+float KDTree::select(point_vector& points, std::vector<int>& indices, int dim,
     size_t start, size_t end, size_t k) {
   if (start+1==end) {
     if (start==k) return points[indices[start]].data[dim];

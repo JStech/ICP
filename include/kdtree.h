@@ -17,9 +17,9 @@
 typedef std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> point_vector;
 
 class KDTree {
-  static float select(point_vector points, std::vector<int>& indices, int dim,
+  static float select(point_vector& points, std::vector<int>& indices, int dim,
       size_t start, size_t end, size_t k);
-  void build_tree(point_vector points, std::vector<int>& indices, size_t start,
+  void build_tree(point_vector& points, std::vector<int>& indices, size_t start,
       size_t end, unsigned depth);
   void search(pcl::PointXYZ target_point, KDTree* node,
       int& nearest_i, float& nearest_d2);
