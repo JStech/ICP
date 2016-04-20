@@ -7,8 +7,24 @@
 #include <cstdlib>
 #include <time.h>
 #include <chrono>
+#include <mach/mach.h>
 
 #define FW 10
+
+size_t get_mem_usage() {
+  task_t targetTask = mach_task_self();
+  struct task_basic_info ti;
+  mach_msg_type_number_t count = TASK_BASIC_INFO_64_COUNT;
+
+  kern_return_t kr = task_info(targetTask, TASK_BASIC_INFO_64,
+      (task_info_t) &ti, &count);
+  if (kr != KERN_SUCCESS) {
+    printf("Kernel returned error during memory usage query");
+    return -1;
+  }
+
+  return ti.resident_size;
+}
 
 int main(int argc, char* argv[]) {
   unsigned seed = time(NULL);
@@ -97,12 +113,12 @@ int main(int argc, char* argv[]) {
   std::chrono::duration<uint64_t, std::micro> kdtree_search_time(0);
   std::chrono::duration<uint64_t, std::micro> kdtree_ext_build_time(0);
   std::chrono::duration<uint64_t, std::micro> kdtree_ext_search_time(0);
+  size_t kdtree_size;
+  size_t kdtree_ext_size;
   auto start = std::chrono::high_resolution_clock::now();
   auto stop = std::chrono::high_resolution_clock::now();
   pcl::PointXYZ search_point;
   float num_searches = 10000;
-
-  bool do_my_tree = true;
 
   std::cout << "Performance tests" << std::endl;
   std::cout << std::setw(FW) << "lg n" <<
@@ -110,9 +126,12 @@ int main(int argc, char* argv[]) {
       " " << std::setw(FW) << "build" <<
       " " << std::setw(FW) << "ext" <<
       " " << std::setw(FW) << "search" <<
-      " " << std::setw(FW) << "ext" << std::endl;
+      " " << std::setw(FW) << "ext" <<
+      " " << std::setw(FW) << "size" <<
+      " " << std::setw(FW) << "ext" <<
+      std::endl;
 
-  for (int lg_points=4; lg_points<31; lg_points++) {
+  for (int lg_points=4; lg_points<25; lg_points++) {
     cloud.resize(1<<lg_points);
     for (int i=0; i<(1<<lg_points); i++) {
       cloud.points[i].x = (100.*rand())/RAND_MAX;
@@ -120,14 +139,16 @@ int main(int argc, char* argv[]) {
       cloud.points[i].z = (100.*rand())/RAND_MAX;
     }
 
-    // build tree
-    if (do_my_tree) {
+    // my KDTree
+    {
       KDTree kdtree_mine;
       start = std::chrono::high_resolution_clock::now();
       kdtree_mine.setInputCloud(cloud.makeShared());
       stop = std::chrono::high_resolution_clock::now();
       kdtree_build_time =
         std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+      kdtree_size = get_mem_usage();
+
       start = std::chrono::high_resolution_clock::now();
       for (int i=0; i<num_searches; i++) {
         search_point.x = (100.*rand())/RAND_MAX;
@@ -138,13 +159,9 @@ int main(int argc, char* argv[]) {
       stop = std::chrono::high_resolution_clock::now();
       kdtree_search_time =
         std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-    } else {
-      kdtree_build_time =
-        std::chrono::duration_cast<std::chrono::microseconds>(stop - stop);
-      kdtree_search_time =
-        std::chrono::duration_cast<std::chrono::microseconds>(stop - stop);
     }
 
+    // pcl KDTree
     {
       pcl::KdTreeFLANN<pcl::PointXYZ> kdtree_ext;
       start = std::chrono::high_resolution_clock::now();
@@ -152,6 +169,7 @@ int main(int argc, char* argv[]) {
       stop = std::chrono::high_resolution_clock::now();
       kdtree_ext_build_time =
         std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+      kdtree_ext_size = get_mem_usage();
 
       start = std::chrono::high_resolution_clock::now();
       for (int i=0; i<1000; i++) {
@@ -163,17 +181,17 @@ int main(int argc, char* argv[]) {
       stop = std::chrono::high_resolution_clock::now();
       kdtree_ext_search_time =
         std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    }
 
-      std::cout << std::setw(FW) << lg_points <<
-        " " << std::setw(FW) << lg_points*(1<<lg_points) <<
-        " " << std::setw(FW) << kdtree_build_time.count() <<
-        " " << std::setw(FW) << kdtree_ext_build_time.count() <<
-        " " << std::setw(FW) << kdtree_search_time.count()/num_searches <<
-        " " << std::setw(FW) << kdtree_ext_search_time.count()/num_searches << std::endl;
-    }
-    if (kdtree_build_time.count() > 30e8 || kdtree_search_time.count() > 30e8) {
-      //do_my_tree = false;
-    }
+    std::cout << std::setw(FW) << lg_points <<
+      " " << std::setw(FW) << lg_points*(1<<lg_points) <<
+      " " << std::setw(FW) << kdtree_build_time.count() <<
+      " " << std::setw(FW) << kdtree_ext_build_time.count() <<
+      " " << std::setw(FW) << kdtree_search_time.count()/num_searches <<
+      " " << std::setw(FW) << kdtree_ext_search_time.count()/num_searches <<
+      " " << std::setw(FW) << kdtree_size <<
+      " " << std::setw(FW) << kdtree_ext_size <<
+      std::endl;
   }
 
 }
