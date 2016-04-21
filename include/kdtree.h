@@ -22,7 +22,7 @@ class KDTree {
   void build_tree(point_vector& points, std::vector<int>& indices, size_t start,
       size_t end, unsigned depth);
   void search(pcl::PointXYZ target_point, KDTree* node,
-      int& nearest_i, float& nearest_d2);
+      int& nearest_i, float& nearest_d2, float bounds[6], bool& done);
 
   public:
     unsigned depth;

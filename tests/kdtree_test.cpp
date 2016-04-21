@@ -9,7 +9,7 @@
 #include <chrono>
 #include <mach/mach.h>
 
-#define FW 10
+#define FW 11
 
 size_t get_mem_usage() {
   task_t targetTask = mach_task_self();
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
       " " << std::setw(FW) << "ext" <<
       std::endl;
 
-  for (int lg_points=4; lg_points<25; lg_points++) {
+  for (int lg_points=4; lg_points<28; lg_points++) {
     cloud.resize(1<<lg_points);
     for (int i=0; i<(1<<lg_points); i++) {
       cloud.points[i].x = (100.*rand())/RAND_MAX;
@@ -184,7 +184,7 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << std::setw(FW) << lg_points <<
-      " " << std::setw(FW) << lg_points*(1<<lg_points) <<
+      " " << std::setw(FW) << ((int64_t)lg_points)*(1<<lg_points) <<
       " " << std::setw(FW) << kdtree_build_time.count() <<
       " " << std::setw(FW) << kdtree_ext_build_time.count() <<
       " " << std::setw(FW) << kdtree_search_time.count()/num_searches <<

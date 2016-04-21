@@ -82,37 +82,62 @@ float KDTree::select(point_vector& points, std::vector<int>& indices, int dim,
   }
 }
 
-// http://andrewd.ces.clemson.edu/courses/cpsc805/references/nearest_search.pdf
 void KDTree::search(pcl::PointXYZ target_point, KDTree* node,
-      int& nearest_i, float& nearest_d2) {
+      int& nearest_i, float& nearest_d2, float bounds[6], bool& done) {
   if (node == NULL) return;
 
   int dim = node->depth%3;
   float xyz = target_point.data[dim];
+  float t;
 
   if (xyz < node->bound) {
     // search left subtree first
-    search(target_point, node->l, nearest_i, nearest_d2);
+    t = bounds[dim*2 + 1];
+    bounds[dim*2 + 1] = xyz;
+    search(target_point, node->l, nearest_i, nearest_d2, bounds, done);
+    if (done) return;
+
+    // check if we need to search right subtree
     if ((xyz - node->bound)*(xyz - node->bound) < nearest_d2) {
       float d2 = dist2(target_point, node->point);
       if (d2 < nearest_d2) {
         nearest_d2 = d2;
         nearest_i = node->point_i;
       }
-      search(target_point, node->r, nearest_i, nearest_d2);
+      bounds[dim*2+1] = t;
+      bounds[dim*2+0] = xyz;
+      search(target_point, node->r, nearest_i, nearest_d2, bounds, done);
+      if (done) return;
     }
   } else {
     // search right subtree first
-    search(target_point, node->r, nearest_i, nearest_d2);
+    t = bounds[dim*2 + 0];
+    bounds[dim*2 + 0] = xyz;
+    search(target_point, node->r, nearest_i, nearest_d2, bounds, done);
+    if (done) return;
+
+    // check if we need to search left subtree
     if ((xyz - node->bound)*(xyz - node->bound) < nearest_d2) {
       float d2 = dist2(target_point, node->point);
       if (d2 < nearest_d2) {
         nearest_d2 = d2;
         nearest_i = node->point_i;
       }
-      search(target_point, node->l, nearest_i, nearest_d2);
+      bounds[dim*2+0] = t;
+      bounds[dim*2+1] = xyz;
+      search(target_point, node->l, nearest_i, nearest_d2, bounds, done);
+      if (done) return;
     }
   }
+
+  // check if ball around target point lies entirely within current bounds
+  done = (
+      ((bounds[0] - target_point.x)*(bounds[0] - target_point.x) > nearest_d2) &&
+      ((bounds[1] - target_point.x)*(bounds[1] - target_point.x) > nearest_d2) &&
+      ((bounds[2] - target_point.y)*(bounds[2] - target_point.y) > nearest_d2) &&
+      ((bounds[3] - target_point.y)*(bounds[3] - target_point.y) > nearest_d2) &&
+      ((bounds[4] - target_point.z)*(bounds[4] - target_point.z) > nearest_d2) &&
+      ((bounds[5] - target_point.z)*(bounds[5] - target_point.z) > nearest_d2));
 }
 
 void KDTree::nearestKSearch(pcl::PointXYZ point, int k, std::vector<int>& nearest_i,
@@ -124,6 +149,11 @@ void KDTree::nearestKSearch(pcl::PointXYZ point, int k, std::vector<int>& neares
   nearest_i.resize(1);
   nearest_d.resize(1);
   nearest_d[0] = INFINITY;
-  this->search(point, this, nearest_i[0], nearest_d[0]);
+  float bounds[6] = {
+    -INFINITY, INFINITY,
+    -INFINITY, INFINITY,
+    -INFINITY, INFINITY};
+  bool done = false;
+  this->search(point, this, nearest_i[0], nearest_d[0], bounds, done);
   nearest_d[0] = sqrt(nearest_d[0]);
 }
