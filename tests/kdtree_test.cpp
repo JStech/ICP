@@ -11,6 +11,10 @@
 
 #define FW 11
 
+const float num_searches = 50;
+const float num_trees = 10;
+const int max_lg_points = 24;
+
 size_t get_mem_usage() {
   task_t targetTask = mach_task_self();
   struct task_basic_info ti;
@@ -118,7 +122,6 @@ int main(int argc, char* argv[]) {
   auto start = std::chrono::high_resolution_clock::now();
   auto stop = std::chrono::high_resolution_clock::now();
   pcl::PointXYZ search_point;
-  float num_searches = 10000;
 
   std::cout << "Performance tests" << std::endl;
   std::cout << std::setw(FW) << "lg n" <<
@@ -131,64 +134,71 @@ int main(int argc, char* argv[]) {
       " " << std::setw(FW) << "ext" <<
       std::endl;
 
-  for (int lg_points=4; lg_points<28; lg_points++) {
+  for (int lg_points=4; lg_points<=max_lg_points; lg_points++) {
     cloud.resize(1<<lg_points);
-    for (int i=0; i<(1<<lg_points); i++) {
-      cloud.points[i].x = (100.*rand())/RAND_MAX;
-      cloud.points[i].y = (100.*rand())/RAND_MAX;
-      cloud.points[i].z = (100.*rand())/RAND_MAX;
-    }
+    kdtree_build_time = std::chrono::microseconds::zero();
+    kdtree_ext_build_time = std::chrono::microseconds::zero();
+    kdtree_search_time = std::chrono::microseconds::zero();
+    kdtree_ext_search_time = std::chrono::microseconds::zero();
 
-    // my KDTree
-    {
-      KDTree kdtree_mine;
-      start = std::chrono::high_resolution_clock::now();
-      kdtree_mine.setInputCloud(cloud.makeShared());
-      stop = std::chrono::high_resolution_clock::now();
-      kdtree_build_time =
-        std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-      kdtree_size = get_mem_usage();
-
-      start = std::chrono::high_resolution_clock::now();
-      for (int i=0; i<num_searches; i++) {
-        search_point.x = (100.*rand())/RAND_MAX;
-        search_point.y = (100.*rand())/RAND_MAX;
-        search_point.z = (100.*rand())/RAND_MAX;
-        kdtree_mine.nearestKSearch(search_point, 1, nearest_i, nearest_d);
+    for (int tree=0; tree<num_trees; tree++) {
+      for (int i=0; i<(1<<lg_points); i++) {
+        cloud.points[i].x = (100.*rand())/RAND_MAX;
+        cloud.points[i].y = (100.*rand())/RAND_MAX;
+        cloud.points[i].z = (100.*rand())/RAND_MAX;
       }
-      stop = std::chrono::high_resolution_clock::now();
-      kdtree_search_time =
-        std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-    }
 
-    // pcl KDTree
-    {
-      pcl::KdTreeFLANN<pcl::PointXYZ> kdtree_ext;
-      start = std::chrono::high_resolution_clock::now();
-      kdtree_ext.setInputCloud(cloud.makeShared());
-      stop = std::chrono::high_resolution_clock::now();
-      kdtree_ext_build_time =
-        std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-      kdtree_ext_size = get_mem_usage();
+      // my KDTree
+      {
+        KDTree kdtree_mine;
+        start = std::chrono::high_resolution_clock::now();
+        kdtree_mine.setInputCloud(cloud.makeShared());
+        stop = std::chrono::high_resolution_clock::now();
+        kdtree_build_time +=
+          std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+        kdtree_size = get_mem_usage();
 
-      start = std::chrono::high_resolution_clock::now();
-      for (int i=0; i<1000; i++) {
-        search_point.x = (100.*rand())/RAND_MAX;
-        search_point.y = (100.*rand())/RAND_MAX;
-        search_point.z = (100.*rand())/RAND_MAX;
-        kdtree_ext.nearestKSearch(search_point, 1, nearest_i, nearest_d);
+        start = std::chrono::high_resolution_clock::now();
+        for (int i=0; i<num_searches; i++) {
+          search_point.x = (100.*rand())/RAND_MAX;
+          search_point.y = (100.*rand())/RAND_MAX;
+          search_point.z = (100.*rand())/RAND_MAX;
+          kdtree_mine.nearestKSearch(search_point, 1, nearest_i, nearest_d);
+        }
+        stop = std::chrono::high_resolution_clock::now();
+        kdtree_search_time +=
+          std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
       }
-      stop = std::chrono::high_resolution_clock::now();
-      kdtree_ext_search_time =
-        std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+
+      // pcl KDTree
+      {
+        pcl::KdTreeFLANN<pcl::PointXYZ> kdtree_ext;
+        start = std::chrono::high_resolution_clock::now();
+        kdtree_ext.setInputCloud(cloud.makeShared());
+        stop = std::chrono::high_resolution_clock::now();
+        kdtree_ext_build_time +=
+          std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+        kdtree_ext_size = get_mem_usage();
+
+        start = std::chrono::high_resolution_clock::now();
+        for (int i=0; i<1000; i++) {
+          search_point.x = (100.*rand())/RAND_MAX;
+          search_point.y = (100.*rand())/RAND_MAX;
+          search_point.z = (100.*rand())/RAND_MAX;
+          kdtree_ext.nearestKSearch(search_point, 1, nearest_i, nearest_d);
+        }
+        stop = std::chrono::high_resolution_clock::now();
+        kdtree_ext_search_time +=
+          std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+      }
     }
 
     std::cout << std::setw(FW) << lg_points <<
       " " << std::setw(FW) << ((int64_t)lg_points)*(1<<lg_points) <<
-      " " << std::setw(FW) << kdtree_build_time.count() <<
-      " " << std::setw(FW) << kdtree_ext_build_time.count() <<
-      " " << std::setw(FW) << kdtree_search_time.count()/num_searches <<
-      " " << std::setw(FW) << kdtree_ext_search_time.count()/num_searches <<
+      " " << std::setw(FW) << kdtree_build_time.count()/num_trees <<
+      " " << std::setw(FW) << kdtree_ext_build_time.count()/num_trees <<
+      " " << std::setw(FW) << kdtree_search_time.count()/(num_searches*num_trees) <<
+      " " << std::setw(FW) << kdtree_ext_search_time.count()/(num_searches*num_trees) <<
       " " << std::setw(FW) << kdtree_size <<
       " " << std::setw(FW) << kdtree_ext_size <<
       std::endl;
