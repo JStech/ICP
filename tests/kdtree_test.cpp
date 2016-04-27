@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
   auto start = std::chrono::high_resolution_clock::now();
   auto stop = std::chrono::high_resolution_clock::now();
   pcl::PointXYZ search_point;
-  float num_searches = 10000;
+  float num_searches = 1000;
 
   std::cout << "Performance tests" << std::endl;
   std::cout << std::setw(FW) << "lg n" <<
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
       " " << std::setw(FW) << "ext" <<
       std::endl;
 
-  for (int lg_points=4; lg_points<28; lg_points++) {
+  for (int lg_points=4; lg_points<25; lg_points++) {
     cloud.resize(1<<lg_points);
     for (int i=0; i<(1<<lg_points); i++) {
       cloud.points[i].x = (100.*rand())/RAND_MAX;
