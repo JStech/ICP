@@ -7,10 +7,11 @@
 #include <cstdlib>
 #include <time.h>
 #include <chrono>
-#include <mach/mach.h>
 
 #define FW 11
 
+#ifdef __APPLE__
+#include <mach/mach.h>
 size_t get_mem_usage() {
   task_t targetTask = mach_task_self();
   struct task_basic_info ti;
@@ -25,6 +26,11 @@ size_t get_mem_usage() {
 
   return ti.resident_size;
 }
+#else
+size_t get_mem_usage() {
+  return 0;
+}
+#endif
 
 int main(int argc, char* argv[]) {
   unsigned seed = time(NULL);
