@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
   }
 
   Eigen::Matrix<float, 4, 4> m = localize(ref_cloud.makeShared(), src_cloud.makeShared(),
-      match_i).Matrix();
+      match_i);
 
   bool passed=true;
   for (size_t i=0; i<src_cloud.points.size(); i++) {
@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
   Eigen::Matrix<float, 4, 4> Tsr = Eigen::Matrix<float, 4, 4>::Identity();
   Tsr.block(0, 0, 3, 3) = Trs.block(0, 0, 3, 3).transpose();
   Tsr.block(0, 3, 3, 1) = -Tsr.block(0, 0, 3, 3) * Trs.block(0, 3, 3, 1);
-  std::cout << Quat<float>::fromRotationMatrix(Tsr.block(0, 0, 3, 3)) << "  ";
+  std::cout << Tsr.block(0, 0, 3, 3) << "  ";
   std::cout << Tsr.block(0, 3, 3, 1).transpose() << std::endl;
 
   pcl::PointCloud<pcl::PointXYZ> out_cloud;

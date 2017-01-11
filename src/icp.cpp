@@ -4,7 +4,6 @@
 #include <cmath>
 #include <Eigen/Eigenvalues>
 #include "icp.h"
-#include "dualquat.h"
 #include <algorithm>
 #include <stdlib.h>
 #include <omp.h>
@@ -60,41 +59,60 @@ float choose_xi(std::vector<std::vector<float>> nearest_d,
   return ((float) valley)/((float) num_bins) * max;
 }
 
-DualQuat<float> localize(PointCloud<PointXYZ>::Ptr reference,
+Eigen::Matrix4f localize(PointCloud<PointXYZ>::Ptr reference,
     PointCloud<PointXYZ>::Ptr source, std::vector<int> match_i) {
-  // Compute matrices C1, C2, C3
-  Eigen::Matrix<float, 4, 4> C1 = Eigen::Matrix<float, 4, 4>::Zero();
-  Eigen::Matrix<float, 4, 4> C2 = Eigen::Matrix<float, 4, 4>::Zero();
 
-  float W = 0.;
-  for (size_t i=0; i<match_i.size(); i++) {
-    if (match_i[i]<0) continue;
-    C1 += Quat<float>(reference->points[match_i[i]]).Q().transpose() *
-      Quat<float>(source->points[i]).W();
-    C2 += Quat<float>(source->points[i]).W() -
-      Quat<float>(reference->points[match_i[i]]).Q();
-    W += 1.;
+  // find centroids
+  Eigen::Vector3f src_centroid;
+  Eigen::Vector3f ref_centroid;
+  int c = 0;
+  for (int i=0; i<match_i.size(); i++) {
+    if (match_i[i]==-1) continue;
+    src_centroid += source->points[i].getVector3fMap();
+    ref_centroid += reference->points[match_i[i]].getVector3fMap();
+    c++;
+  }
+  src_centroid /= c;
+  ref_centroid /= c;
+
+  // estimate scale transform
+  double scale = 0;
+  for (int i=0; i<match_i.size(); i++) {
+    if (match_i[i]==-1) continue;
+    scale += (source->points[i].getVector3fMap() - src_centroid).norm() /
+      (reference->points[match_i[i]].getVector3fMap() - ref_centroid).norm();
+  }
+  scale /= c;
+
+  // calculate cross correlation
+  Eigen::Matrix<double, 6, 1> m = Eigen::Matrix<double, 6, 1>::Zero();
+  for (int i=0; i<match_i.size(); i++) {
+    if (match_i[i]==-1) continue;
+    pcl::PointXYZ &s_pt = source->points[i];
+    pcl::PointXYZ &r_pt = reference->points[match_i[i]];
+    m[0] += (s_pt.x - src_centroid[0]) * (r_pt.x - ref_centroid[0])/scale;
+    m[1] += (s_pt.y - src_centroid[1]) * (r_pt.y - ref_centroid[1])/scale;
+    m[2] += (s_pt.z - src_centroid[2]) * (r_pt.z - ref_centroid[2])/scale;
+    m[3] += (s_pt.x - src_centroid[0]) * (r_pt.y - ref_centroid[1])/scale;
+    m[4] += (s_pt.y - src_centroid[1]) * (r_pt.z - ref_centroid[2])/scale;
+    m[5] += (s_pt.z - src_centroid[2]) * (r_pt.x - ref_centroid[0])/scale;
   }
 
-  C1 *= -2;
-  C2 *= 2;
+  // perform SVD to recover rotation matrix
+  Eigen::Matrix3f M;
+  M << m[0], m[3], m[5],
+       m[3], m[1], m[4],
+       m[5], m[4], m[2];
 
-  Eigen::Matrix<float, 4, 4> A = .5 * (0.5/W * C2.transpose() * C2 - C1 - C1.transpose());
-
-  Eigen::EigenSolver<Eigen::Matrix<float, 4, 4>> solver;
-  solver.compute(A, true);
-  float max_eigenvalue = -INFINITY;
-  Eigen::Matrix<float, 4, 1> max_eigenvector;
-  for (long i = 0; i < solver.eigenvalues().size(); i++) {
-    if (solver.eigenvalues()[i].real() > max_eigenvalue) {
-      max_eigenvalue = solver.eigenvalues()[i].real();
-      max_eigenvector = solver.eigenvectors().col(i).real();
-    }
-  }
-
-  Quat<float> real(max_eigenvector);
-  Quat<float> dual(-0.5/W * C2*max_eigenvector);
-  return DualQuat<float>(real, dual);
+  // put it all together
+  Eigen::JacobiSVD<Eigen::Matrix3f> svd(M, Eigen::ComputeFullU|Eigen::ComputeFullV);
+  Eigen::Matrix4f R = Eigen::Matrix4f::Identity();
+  R.topLeftCorner(3, 3) = (svd.matrixU() * (svd.matrixV().transpose())).transpose();
+  Eigen::Matrix4f T1 = Eigen::Matrix4f::Identity();
+  T1.topRightCorner(3, 1) = src_centroid;
+  Eigen::Matrix4f T2 = Eigen::Matrix4f::Identity();
+  T2.topRightCorner(3, 1) = -ref_centroid;
+  return T1*(scale*R)*T2;
 }
 
 // input: reference and source point clouds, prior SE3 transform guess
@@ -106,7 +124,7 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
   float Dmax = 20*D;
 
   // transformations calculated at each iteration
-  DualQuat<float> T;
+  Eigen::Matrix<float, 4, 4> Tmat;
 
 #ifdef PROFILE
   std::chrono::duration<uint64_t, std::micro> kdtree_build_time(0);
@@ -209,7 +227,7 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
 #endif
 
     // compute motion
-    T = localize(reference, source, match_i);
+    Tmat = localize(reference, source, match_i);
 
 #ifdef PROFILE
     stop = std::chrono::high_resolution_clock::now();
@@ -217,7 +235,6 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
     start = stop;
 #endif
     // apply to all source points
-    Eigen::Matrix<float, 4, 4> Tmat = T.Matrix();
     for (size_t i=0; i<source->points.size(); i++) {
       source->points[i].getVector4fMap() = Tmat*source->points[i].getVector4fMap();
     }
@@ -226,8 +243,8 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
     Trs = Tmat*Trs;
 
     // check stopping criteria
-    float dt = T.getTranslation().norm();
-    float dth = T.r.Angle();
+    float dt = Tmat.topRightCorner(3, 1).norm();
+    float dth = acos((Tmat.trace() - 1.)/2.);
 
 #ifdef PROFILE
     std::cerr << "Iteration " << iter << " dt " << dt << ", dtheta " << dth <<
