@@ -63,8 +63,8 @@ Eigen::Matrix4f localize(PointCloud<PointXYZ>::Ptr reference,
     PointCloud<PointXYZ>::Ptr source, std::vector<int> match_i) {
 
   // find centroids
-  Eigen::Vector3f src_centroid;
-  Eigen::Vector3f ref_centroid;
+  Eigen::Vector3f src_centroid = Eigen::Vector3f::Zero();
+  Eigen::Vector3f ref_centroid = Eigen::Vector3f::Zero();
   int c = 0;
   for (int i=0; i<match_i.size(); i++) {
     if (match_i[i]==-1) continue;
@@ -76,6 +76,7 @@ Eigen::Matrix4f localize(PointCloud<PointXYZ>::Ptr reference,
   ref_centroid /= c;
 
   // estimate scale transform
+  // scale variable is source/reference
   double scale = 0;
   for (int i=0; i<match_i.size(); i++) {
     if (match_i[i]==-1) continue;
@@ -84,35 +85,26 @@ Eigen::Matrix4f localize(PointCloud<PointXYZ>::Ptr reference,
   }
   scale /= c;
 
+  // perform SVD to recover rotation matrix
   // calculate cross correlation
-  Eigen::Matrix<double, 6, 1> m = Eigen::Matrix<double, 6, 1>::Zero();
+  Eigen::Matrix3f M = Eigen::Matrix3f::Zero();
   for (int i=0; i<match_i.size(); i++) {
     if (match_i[i]==-1) continue;
     pcl::PointXYZ &s_pt = source->points[i];
     pcl::PointXYZ &r_pt = reference->points[match_i[i]];
-    m[0] += (s_pt.x - src_centroid[0]) * (r_pt.x - ref_centroid[0])/scale;
-    m[1] += (s_pt.y - src_centroid[1]) * (r_pt.y - ref_centroid[1])/scale;
-    m[2] += (s_pt.z - src_centroid[2]) * (r_pt.z - ref_centroid[2])/scale;
-    m[3] += (s_pt.x - src_centroid[0]) * (r_pt.y - ref_centroid[1])/scale;
-    m[4] += (s_pt.y - src_centroid[1]) * (r_pt.z - ref_centroid[2])/scale;
-    m[5] += (s_pt.z - src_centroid[2]) * (r_pt.x - ref_centroid[0])/scale;
+    M += (s_pt.getVector3fMap() - src_centroid)/scale * (r_pt.getVector3fMap()
+        - ref_centroid).transpose();
   }
-
-  // perform SVD to recover rotation matrix
-  Eigen::Matrix3f M;
-  M << m[0], m[3], m[5],
-       m[3], m[1], m[4],
-       m[5], m[4], m[2];
-
-  // put it all together
   Eigen::JacobiSVD<Eigen::Matrix3f> svd(M, Eigen::ComputeFullU|Eigen::ComputeFullV);
   Eigen::Matrix4f R = Eigen::Matrix4f::Identity();
-  R.topLeftCorner(3, 3) = (svd.matrixU() * (svd.matrixV().transpose())).transpose();
+  R.topLeftCorner(3, 3) = (svd.matrixU() * (svd.matrixV().transpose())).transpose()/scale;
+
+  // put it all together
   Eigen::Matrix4f T1 = Eigen::Matrix4f::Identity();
-  T1.topRightCorner(3, 1) = src_centroid;
+  T1.topRightCorner(3, 1) = -src_centroid;
   Eigen::Matrix4f T2 = Eigen::Matrix4f::Identity();
-  T2.topRightCorner(3, 1) = -ref_centroid;
-  return T1*(scale*R)*T2;
+  T2.topRightCorner(3, 1) = ref_centroid;
+  return T2*R*T1;
 }
 
 // input: reference and source point clouds, prior SE3 transform guess
