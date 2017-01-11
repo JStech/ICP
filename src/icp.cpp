@@ -235,8 +235,9 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
     Trs = Tmat*Trs;
 
     // check stopping criteria
+    float scale = Tmat.block(0, 0, 3, 1).norm();
     float dt = Tmat.topRightCorner(3, 1).norm();
-    float dth = acos((Tmat.trace() - 1.)/2.);
+    float dth = acos((Tmat.topLeftCorner(3, 3).trace()/scale - 1.)/2.);
 
 #ifdef PROFILE
     std::cerr << "Iteration " << iter << " dt " << dt << ", dtheta " << dth <<

@@ -73,44 +73,30 @@ int main(int argc, char* argv[]) {
     std::cout << ":-D localize passed" << std::endl;
   }
 
-  if (argc < 2) return 0;
-
-  int f1 = 0;
-  int f2 = 1;
-
-  if (argc > 2) {
-    f1 = atoi(argv[2]);
-  }
-
-  if (argc > 3) {
-    f2 = atoi(argv[3]);
-  } else {
-    f2 = f1+1;
-  }
+  if (argc < 3) return 0;
 
   // open point cloud file
-  pcl::PointCloud<pcl::PointXYZ>::Ptr real_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-  if (pcl::io::loadPCDFile<pcl::PointXYZ>(argv[1], *real_cloud) == -1) {
+  pcl::PointCloud<pcl::PointXYZ>::Ptr real_ref_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr real_src_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+
+  if (pcl::io::loadPCDFile<pcl::PointXYZ>(argv[1], *real_ref_cloud) == -1) {
     std::cout << "Error reading file " << argv[1] << std::endl;
     exit(1);
   }
-  std::cout << "Read " << real_cloud->height << " clouds of " << real_cloud->width <<
+  std::cout << "Read " << real_ref_cloud->height << " clouds of " << real_ref_cloud->width <<
     " points." << std::endl;
 
-  std::vector<int> cloud_i(real_cloud->width);
-  for (size_t i=0; i<cloud_i.size(); i++) {
-    cloud_i[i] = i + f1*cloud_i.size();
+  if (pcl::io::loadPCDFile<pcl::PointXYZ>(argv[2], *real_src_cloud) == -1) {
+    std::cout << "Error reading file " << argv[2] << std::endl;
+    exit(1);
   }
-  pcl::PointCloud<pcl::PointXYZ> real_ref_cloud(*real_cloud, cloud_i);
-  for (size_t i=0; i<cloud_i.size(); i++) {
-    cloud_i[i] = i+f2*cloud_i.size();
-  }
-  pcl::PointCloud<pcl::PointXYZ> real_src_cloud(*real_cloud, cloud_i);
+  std::cout << "Read " << real_src_cloud->height << " clouds of " << real_src_cloud->width <<
+    " points." << std::endl;
 
   Eigen::Matrix<float, 4, 4> Trs = Eigen::Matrix<float, 4, 4>::Identity();
 
   std::vector<bool> matched;
-  ICP(real_ref_cloud.makeShared(), real_src_cloud.makeShared(), Trs, 10.0, &matched);
+  ICP(real_ref_cloud->makeShared(), real_src_cloud->makeShared(), Trs, 10.0, &matched);
   Eigen::Matrix<float, 4, 4> Tsr = Eigen::Matrix<float, 4, 4>::Identity();
   Tsr.block(0, 0, 3, 3) = Trs.block(0, 0, 3, 3).transpose();
   Tsr.block(0, 3, 3, 1) = -Tsr.block(0, 0, 3, 3) * Trs.block(0, 3, 3, 1);
@@ -125,11 +111,11 @@ int main(int argc, char* argv[]) {
 
   for (size_t i=0; i<307200; i++) {
     out_cloud.points[0*307200 + i].getVector4fMap() =
-      real_ref_cloud.points[i].getVector4fMap();
+      real_ref_cloud->points[i].getVector4fMap();
     out_cloud.points[1*307200 + i].getVector4fMap() = Trs *
-      real_src_cloud.points[i].getVector4fMap();
+      real_src_cloud->points[i].getVector4fMap();
     out_cloud.points[2*307200 + i].getVector4fMap() =
-      real_src_cloud.points[i].getVector4fMap();
+      real_src_cloud->points[i].getVector4fMap();
   }
 
   //pcl::io::savePCDFileBinary("registeredclouds.pcd", out_cloud);
