@@ -66,7 +66,7 @@ Eigen::Matrix4f localize(PointCloud<PointXYZ>::Ptr reference,
   Eigen::Vector3f src_centroid = Eigen::Vector3f::Zero();
   Eigen::Vector3f ref_centroid = Eigen::Vector3f::Zero();
   int c = 0;
-  for (int i=0; i<match_i.size(); i++) {
+  for (size_t i=0; i<match_i.size(); i++) {
     if (match_i[i]==-1) continue;
     src_centroid += source->points[i].getVector3fMap();
     ref_centroid += reference->points[match_i[i]].getVector3fMap();
@@ -78,7 +78,7 @@ Eigen::Matrix4f localize(PointCloud<PointXYZ>::Ptr reference,
   // estimate scale transform
   // scale variable is source/reference
   double scale = 0;
-  for (int i=0; i<match_i.size(); i++) {
+  for (size_t i=0; i<match_i.size(); i++) {
     if (match_i[i]==-1) continue;
     scale += (source->points[i].getVector3fMap() - src_centroid).norm() /
       (reference->points[match_i[i]].getVector3fMap() - ref_centroid).norm();
@@ -88,7 +88,7 @@ Eigen::Matrix4f localize(PointCloud<PointXYZ>::Ptr reference,
   // perform SVD to recover rotation matrix
   // calculate cross correlation
   Eigen::Matrix3f M = Eigen::Matrix3f::Zero();
-  for (int i=0; i<match_i.size(); i++) {
+  for (size_t i=0; i<match_i.size(); i++) {
     if (match_i[i]==-1) continue;
     pcl::PointXYZ &s_pt = source->points[i];
     pcl::PointXYZ &r_pt = reference->points[match_i[i]];
@@ -175,15 +175,16 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
         match_i[i] = nearest_i[i][0];
         mu += nearest_d[i][0];
         sigma += nearest_d[i][0]*nearest_d[i][0];
+        n++;
       } else {
         match_i[i] = -1;
       }
-      n++;
     }
 
     mu = mu/n;
     sigma = sqrt(sigma/n - mu*mu);
 
+    std::cerr << "mu " << mu << ", D " << D << std::endl;
     if (mu < D) {
       Dmax = mu + 3*sigma;
     } else if (mu < 3*D) {
@@ -241,7 +242,7 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
 
 #ifdef PROFILE
     std::cerr << "Iteration " << iter << " dt " << dt << ", dtheta " << dth <<
-      ", matched " << matched_n << "/" << tot_n << std::endl;
+      ", scale " << scale << ", matched " << matched_n << "/" << tot_n << std::endl;
     stop = std::chrono::high_resolution_clock::now();
     update_time += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     start = stop;

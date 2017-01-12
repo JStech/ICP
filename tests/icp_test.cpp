@@ -85,6 +85,7 @@ int main(int argc, char* argv[]) {
   }
   std::cout << "Read " << real_ref_cloud->height << " clouds of " << real_ref_cloud->width <<
     " points." << std::endl;
+  int ref_n = real_ref_cloud->width;
 
   if (pcl::io::loadPCDFile<pcl::PointXYZ>(argv[2], *real_src_cloud) == -1) {
     std::cout << "Error reading file " << argv[2] << std::endl;
@@ -92,33 +93,25 @@ int main(int argc, char* argv[]) {
   }
   std::cout << "Read " << real_src_cloud->height << " clouds of " << real_src_cloud->width <<
     " points." << std::endl;
+  int src_n = real_src_cloud->width;
 
   Eigen::Matrix<float, 4, 4> Trs = Eigen::Matrix<float, 4, 4>::Identity();
 
   std::vector<bool> matched;
-  ICP(real_ref_cloud->makeShared(), real_src_cloud->makeShared(), Trs, 10.0, &matched);
-  Eigen::Matrix<float, 4, 4> Tsr = Eigen::Matrix<float, 4, 4>::Identity();
-  Tsr.block(0, 0, 3, 3) = Trs.block(0, 0, 3, 3).transpose();
-  Tsr.block(0, 3, 3, 1) = -Tsr.block(0, 0, 3, 3) * Trs.block(0, 3, 3, 1);
-  std::cout << Tsr.block(0, 0, 3, 3) << "  ";
-  std::cout << Tsr.block(0, 3, 3, 1).transpose() << std::endl;
+  ICP(real_ref_cloud->makeShared(), real_src_cloud->makeShared(), Trs, 0.001, &matched);
+  std::cout << Trs << std::endl;
 
-  pcl::PointCloud<pcl::PointXYZ> out_cloud;
-  out_cloud.height = 1;
-  out_cloud.width = 307200 * 3;
-  out_cloud.is_dense = false;
-  out_cloud.resize(307200 * 3);
+  pcl::PointCloud<pcl::PointXYZ> transformed_src;
+  transformed_src.height = 1;
+  transformed_src.width = src_n;
+  transformed_src.is_dense = false;
+  transformed_src.resize(src_n);
 
-  for (size_t i=0; i<307200; i++) {
-    out_cloud.points[0*307200 + i].getVector4fMap() =
-      real_ref_cloud->points[i].getVector4fMap();
-    out_cloud.points[1*307200 + i].getVector4fMap() = Trs *
-      real_src_cloud->points[i].getVector4fMap();
-    out_cloud.points[2*307200 + i].getVector4fMap() =
-      real_src_cloud->points[i].getVector4fMap();
+  for (int i=0; i<src_n; i++) {
+    Eigen::Vector4f pt = real_src_cloud->points[i].getVector4fMap();
+    pt[3] = 1.;
+    transformed_src.points[i].getVector4fMap() = Trs * pt;
   }
-
-  //pcl::io::savePCDFileBinary("registeredclouds.pcd", out_cloud);
 
   // start pangolin
   pangolin::CreateWindowAndBind("Main", W, H);
@@ -151,7 +144,7 @@ int main(int argc, char* argv[]) {
   // unmatched source cloud: light blue
   SceneGraph::GLCachedPrimitives glPCsru(GL_POINTS, SceneGraph::GLColor(0.5f, 0.5f, 1.0f));
   // original source cloud: dark gray
-  SceneGraph::GLCachedPrimitives glPCsrr(GL_POINTS, SceneGraph::GLColor(0.3f, 0.3f, 0.3f));
+  SceneGraph::GLCachedPrimitives glPCsrr(GL_POINTS, SceneGraph::GLColor(0.4f, 0.4f, 0.4f));
   glGraph.AddChild(&glPCref);
   glGraph.AddChild(&glPCsrc);
   glGraph.AddChild(&glPCsru);
@@ -168,22 +161,30 @@ int main(int argc, char* argv[]) {
       glPCsrc.Clear();
       glPCsru.Clear();
       glPCsrr.Clear();
-      for (uint32_t i = 0; i < 307200; i++){
-        glPCref.AddVertex(Eigen::Vector3d(out_cloud.points[0*307200 + i].x,
-              out_cloud.points[0*307200 + i].y, out_cloud.points[0*307200 +
-              i].z));
+      for (int i = 0; i < ref_n; i++) {
+        glPCref.AddVertex(Eigen::Vector3d(
+              real_ref_cloud->points[i].x,
+              real_ref_cloud->points[i].y,
+              real_ref_cloud->points[i].z));
+      }
+      for (int i = 0; i < src_n; i++) {
+        glPCsrr.AddVertex(Eigen::Vector3d(
+              real_src_cloud->points[i].x,
+              real_src_cloud->points[i].y,
+              real_src_cloud->points[i].z));
+      }
+      for (int i = 0; i < src_n; i++){
         if (matched[i]) {
-          glPCsrc.AddVertex(Eigen::Vector3d(out_cloud.points[1*307200 + i].x,
-                out_cloud.points[1*307200 + i].y, out_cloud.points[1*307200 +
-                i].z));
+          glPCsrc.AddVertex(Eigen::Vector3d(
+                transformed_src.points[i].x,
+                transformed_src.points[i].y,
+                transformed_src.points[i].z));
         } else {
-          glPCsru.AddVertex(Eigen::Vector3d(out_cloud.points[1*307200 + i].x,
-                out_cloud.points[1*307200 + i].y, out_cloud.points[1*307200 +
-                i].z));
+          glPCsru.AddVertex(Eigen::Vector3d(
+                transformed_src.points[i].x,
+                transformed_src.points[i].y,
+                transformed_src.points[i].z));
         }
-        glPCsrr.AddVertex(Eigen::Vector3d(out_cloud.points[2*307200 + i].x,
-              out_cloud.points[2*307200 + i].y, out_cloud.points[2*307200 +
-              i].z));
       }
       draw = false;
     }
