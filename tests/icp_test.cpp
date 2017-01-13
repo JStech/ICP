@@ -66,6 +66,9 @@ int main(int argc, char* argv[]) {
   for (size_t i=0; i<src_cloud.points.size(); i++) {
     passed = passed && ((ref_cloud.points[i].getVector4fMap() -
           m*src_cloud.points[i].getVector4fMap()).norm() < epsilon);
+    passed = passed && ((ref_cloud.points[i].getVector3fMap() -
+          (m.topRightCorner(3,3)*src_cloud.points[i].getVector3fMap() +
+           m.topLeftCorner(3,1))).norm() < epsilon);
   }
   if (!passed) {
     std::cout << ":-( localize failed" << std::endl;
@@ -87,6 +90,17 @@ int main(int argc, char* argv[]) {
     " points." << std::endl;
   int ref_n = real_ref_cloud->width;
 
+  Eigen::Matrix<float, 4, 4> T_init;
+  T_init <<  1.0010,  -0.0041,   0.0082,   0.03,
+             0.0041,   1.0010,  -0.0041,   0.01,
+            -0.0082,   0.0041,   1.0010,   0.05,
+                  0,        0,        0,      1;
+  for (int i=0; i<ref_n; i++) {
+    real_ref_cloud->points[i].getVector3fMap() =
+      T_init.topLeftCorner(3,3) * real_ref_cloud->points[i].getVector3fMap() +
+      T_init.topRightCorner(3,1);
+  }
+
   if (pcl::io::loadPCDFile<pcl::PointXYZ>(argv[2], *real_src_cloud) == -1) {
     std::cout << "Error reading file " << argv[2] << std::endl;
     exit(1);
@@ -98,7 +112,7 @@ int main(int argc, char* argv[]) {
   Eigen::Matrix<float, 4, 4> Trs = Eigen::Matrix<float, 4, 4>::Identity();
 
   std::vector<bool> matched;
-  ICP(real_ref_cloud->makeShared(), real_src_cloud->makeShared(), Trs, 0.001, &matched);
+  ICP(real_ref_cloud->makeShared(), real_src_cloud->makeShared(), Trs, 0.0001, &matched);
   std::cout << Trs << std::endl;
 
   pcl::PointCloud<pcl::PointXYZ> transformed_src;
@@ -108,9 +122,9 @@ int main(int argc, char* argv[]) {
   transformed_src.resize(src_n);
 
   for (int i=0; i<src_n; i++) {
-    Eigen::Vector4f pt = real_src_cloud->points[i].getVector4fMap();
-    pt[3] = 1.;
-    transformed_src.points[i].getVector4fMap() = Trs * pt;
+    transformed_src.points[i].getVector3fMap() =
+      Trs.topLeftCorner(3,3) * real_src_cloud->points[i].getVector3fMap() +
+      Trs.topRightCorner(3,1);
   }
 
   // start pangolin

@@ -144,7 +144,9 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
 
   // transform source points according to prior Trs
   for (size_t i=0; i<source->size(); i++) {
-    source->points[i].getVector4fMap() = Trs*source->points[i].getVector4fMap();
+    source->points[i].getVector3fMap() =
+      Trs.topLeftCorner(3,3)*source->points[i].getVector3fMap() +
+      Trs.topRightCorner(3,1);
   }
 
   for (int iter=0; iter < MAX_ITER; iter++) {
@@ -229,7 +231,9 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
 #endif
     // apply to all source points
     for (size_t i=0; i<source->points.size(); i++) {
-      source->points[i].getVector4fMap() = Tmat*source->points[i].getVector4fMap();
+      source->points[i].getVector3fMap() =
+        Tmat.topLeftCorner(3,3)*source->points[i].getVector3fMap() +
+        Tmat.topRightCorner(3,1);
     }
 
     // update Trs
@@ -247,7 +251,7 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
     update_time += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     start = stop;
 #endif
-    if (iter > 0 && dt < 0.01 && dth < 0.01) {
+    if (iter > 49 || (iter > 0 && dt < 0.0008 && dth < 0.0005)) {
       break;
     }
   }
