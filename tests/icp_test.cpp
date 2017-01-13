@@ -67,8 +67,8 @@ int main(int argc, char* argv[]) {
     passed = passed && ((ref_cloud.points[i].getVector4fMap() -
           m*src_cloud.points[i].getVector4fMap()).norm() < epsilon);
     passed = passed && ((ref_cloud.points[i].getVector3fMap() -
-          (m.topRightCorner(3,3)*src_cloud.points[i].getVector3fMap() +
-           m.topLeftCorner(3,1))).norm() < epsilon);
+          (m.topLeftCorner(3,3)*src_cloud.points[i].getVector3fMap() +
+           m.topRightCorner(3,1))).norm() < epsilon);
   }
   if (!passed) {
     std::cout << ":-( localize failed" << std::endl;
