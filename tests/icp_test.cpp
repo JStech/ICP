@@ -90,6 +90,7 @@ int main(int argc, char* argv[]) {
     " points." << std::endl;
   int ref_n = real_ref_cloud->width;
 
+  /*
   Eigen::Matrix<float, 4, 4> T_init;
   T_init <<  1.0010,  -0.0041,   0.0082,   0.03,
              0.0041,   1.0010,  -0.0041,   0.01,
@@ -100,6 +101,7 @@ int main(int argc, char* argv[]) {
       T_init.topLeftCorner(3,3) * real_ref_cloud->points[i].getVector3fMap() +
       T_init.topRightCorner(3,1);
   }
+  */
 
   if (pcl::io::loadPCDFile<pcl::PointXYZ>(argv[2], *real_src_cloud) == -1) {
     std::cout << "Error reading file " << argv[2] << std::endl;
@@ -112,7 +114,7 @@ int main(int argc, char* argv[]) {
   Eigen::Matrix<float, 4, 4> Trs = Eigen::Matrix<float, 4, 4>::Identity();
 
   std::vector<bool> matched;
-  ICP(real_ref_cloud->makeShared(), real_src_cloud->makeShared(), Trs, 0.0001, &matched);
+  ICP(real_ref_cloud->makeShared(), real_src_cloud->makeShared(), Trs, 0.001, &matched);
   std::cout << Trs << std::endl;
 
   pcl::PointCloud<pcl::PointXYZ> transformed_src;

@@ -251,7 +251,7 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
     update_time += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     start = stop;
 #endif
-    if (iter > 49 || (iter > 0 && dt < 0.0008 && dth < 0.0005)) {
+    if (iter > 29 || (iter > 0 && dt < 0.004 && dth < 0.005)) {
       break;
     }
   }
