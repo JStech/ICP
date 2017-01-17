@@ -60,10 +60,11 @@ if(BUILD_ICP)
   add_executable( main src/main.cpp )
   target_link_libraries( main icp dualquat ${PCL_LIBRARIES} )
 
+  add_executable( aggregate_pc src/aggregate_pc.cpp )
   add_executable( make_pc src/make_pc.cpp )
   add_executable( plot_pc src/plot_pc.cpp )
 
-  target_link_libraries( plot_pc
+  target_link_libraries( aggregate_pc
     ${HAL_LIBRARIES}
     ${Pangolin_LIBRARIES}
     ${SceneGraph_LIBRARIES}
@@ -72,6 +73,13 @@ if(BUILD_ICP)
 
   target_link_libraries( make_pc
     ${Calibu_LIBRARIES}
+    ${HAL_LIBRARIES}
+    ${Pangolin_LIBRARIES}
+    ${SceneGraph_LIBRARIES}
+    ${PCL_LIBRARIES}
+    )
+
+  target_link_libraries( plot_pc
     ${HAL_LIBRARIES}
     ${Pangolin_LIBRARIES}
     ${SceneGraph_LIBRARIES}
