@@ -114,7 +114,8 @@ int main(int argc, char* argv[]) {
   Eigen::Matrix<float, 4, 4> Trs = Eigen::Matrix<float, 4, 4>::Identity();
 
   std::vector<bool> matched;
-  ICP(real_ref_cloud->makeShared(), real_src_cloud->makeShared(), Trs, 0.001, &matched);
+  ICP(real_ref_cloud->makeShared(), real_src_cloud->makeShared(), Trs, 0.001,
+      0.0001, 0.001, 50, &matched);
   std::cout << Trs << std::endl;
 
   pcl::PointCloud<pcl::PointXYZ> transformed_src;

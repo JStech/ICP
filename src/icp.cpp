@@ -110,7 +110,8 @@ Eigen::Matrix4f localize(PointCloud<PointXYZ>::Ptr reference,
 // input: reference and source point clouds, prior SE3 transform guess
 // output: SE3 transform from source to reference, total error (of some sort TODO)
 float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
-    Eigen::Matrix<float, 4, 4> &Trs, float D, std::vector<bool> *matched) {
+    Eigen::Matrix<float, 4, 4> &Trs, float D, float dt_thresh, float dth_thresh,
+    int max_iter, std::vector<bool> *matched) {
 
   // initialize ICP parameters
   float Dmax = 20*D;
@@ -251,7 +252,7 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
     update_time += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     start = stop;
 #endif
-    if (iter > 29 || (iter > 0 && dt < 0.004 && dth < 0.005)) {
+    if (iter >= max_iter || (iter > 0 && dt < dt_thresh && dth < dth_thresh)) {
       break;
     }
   }
