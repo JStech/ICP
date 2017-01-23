@@ -1,12 +1,14 @@
 #include <iostream>
 #include <SceneGraph/SceneGraph.h>
 #include <pangolin/pangolin.h>
+#include <pcl/compression/octree_pointcloud_compression.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 #include "icp.h"
 
 #define W 1024
 #define H 768
+#define COMP_N (1<<16)
 
 using namespace pcl;
 const float epsilon = 1e-4;
@@ -75,6 +77,32 @@ int main(int argc, char* argv[]) {
   } else {
     std::cout << ":-D localize passed" << std::endl;
   }
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr in_comp_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr out_comp_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+
+  in_comp_cloud->points.resize(COMP_N);
+  for (size_t i=0; i<COMP_N; i++) {
+    in_comp_cloud->points[i].x = rand() / (RAND_MAX + 1.0f);
+    in_comp_cloud->points[i].y = rand() / (RAND_MAX + 1.0f);
+    in_comp_cloud->points[i].z = rand() / (RAND_MAX + 1.0f);
+  }
+
+  pcl::io::compression_Profiles_e compression_profile = pcl::io::MANUAL_CONFIGURATION;
+
+  auto PointCloudEncoder = new
+    pcl::io::OctreePointCloudCompression<pcl::PointXYZ> (compression_profile,
+        false, 0.05, 0.05, true, 50, false, 4);
+  auto PointCloudDecoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZ> ();
+
+  std::stringstream compressedData;
+
+  PointCloudEncoder->encodePointCloud(in_comp_cloud, compressedData);
+  PointCloudDecoder->decodePointCloud(compressedData, out_comp_cloud);
+
+  std::cout << "Compression:" << std::endl;
+  std::cout << "  input points,  " << COMP_N << std::endl;
+  std::cout << "  output points, " << out_comp_cloud->size() << std::endl;
 
   if (argc < 3) return 0;
 

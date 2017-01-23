@@ -1,3 +1,4 @@
+#include <pcl/compression/octree_pointcloud_compression.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
@@ -273,4 +274,20 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
 #endif
 
   return 0.f;
+}
+
+void downsample_cloud(float d,
+    pcl::PointCloud<pcl::PointXYZ>::Ptr in_cloud,
+    pcl::PointCloud<pcl::PointXYZ>::Ptr out_cloud) {
+  pcl::io::compression_Profiles_e compression_profile = pcl::io::MANUAL_CONFIGURATION;
+
+  auto PointCloudEncoder = new
+    pcl::io::OctreePointCloudCompression<pcl::PointXYZ> (compression_profile,
+        false, d, d, true, 50, false, 4);
+  auto PointCloudDecoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZ> ();
+
+  std::stringstream compressedData;
+
+  PointCloudEncoder->encodePointCloud(in_cloud, compressedData);
+  PointCloudDecoder->decodePointCloud(compressedData, out_cloud);
 }
