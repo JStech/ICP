@@ -88,17 +88,7 @@ int main(int argc, char* argv[]) {
     in_comp_cloud->points[i].z = rand() / (RAND_MAX + 1.0f);
   }
 
-  pcl::io::compression_Profiles_e compression_profile = pcl::io::MANUAL_CONFIGURATION;
-
-  auto PointCloudEncoder = new
-    pcl::io::OctreePointCloudCompression<pcl::PointXYZ> (compression_profile,
-        false, 0.05, 0.05, true, 50, false, 4);
-  auto PointCloudDecoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZ> ();
-
-  std::stringstream compressedData;
-
-  PointCloudEncoder->encodePointCloud(in_comp_cloud, compressedData);
-  PointCloudDecoder->decodePointCloud(compressedData, out_comp_cloud);
+  downsample_cloud(0.05, in_comp_cloud, out_comp_cloud);
 
   std::cout << "Compression:" << std::endl;
   std::cout << "  input points,  " << COMP_N << std::endl;
