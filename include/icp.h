@@ -13,7 +13,7 @@ Eigen::Matrix4f localize(pcl::PointCloud<pcl::PointXYZ>::Ptr reference,
     pcl::PointCloud<pcl::PointXYZ>::Ptr source, std::vector<int> matched);
 
 void downsample_cloud(float d,
-    pcl::PointCloud<pcl::PointXYZ>::Ptr in_cloud,
-    pcl::PointCloud<pcl::PointXYZ>::Ptr out_cloud);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr in_cloud,
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr out_cloud);
 
 #endif

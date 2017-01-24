@@ -78,14 +78,17 @@ int main(int argc, char* argv[]) {
     std::cout << ":-D localize passed" << std::endl;
   }
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr in_comp_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-  pcl::PointCloud<pcl::PointXYZ>::Ptr out_comp_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr in_comp_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr out_comp_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
 
   in_comp_cloud->points.resize(COMP_N);
   for (size_t i=0; i<COMP_N; i++) {
     in_comp_cloud->points[i].x = rand() / (RAND_MAX + 1.0f);
     in_comp_cloud->points[i].y = rand() / (RAND_MAX + 1.0f);
     in_comp_cloud->points[i].z = rand() / (RAND_MAX + 1.0f);
+    in_comp_cloud->points[i].r = rand()%256;
+    in_comp_cloud->points[i].g = rand()%256;
+    in_comp_cloud->points[i].b = rand()%256;
   }
 
   downsample_cloud(0.05, in_comp_cloud, out_comp_cloud);

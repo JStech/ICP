@@ -277,14 +277,14 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
 }
 
 void downsample_cloud(float d,
-    pcl::PointCloud<pcl::PointXYZ>::Ptr in_cloud,
-    pcl::PointCloud<pcl::PointXYZ>::Ptr out_cloud) {
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr in_cloud,
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr out_cloud) {
   pcl::io::compression_Profiles_e compression_profile = pcl::io::MANUAL_CONFIGURATION;
 
   auto PointCloudEncoder = new
-    pcl::io::OctreePointCloudCompression<pcl::PointXYZ> (compression_profile,
-        false, d, d, true, 50, false, 4);
-  auto PointCloudDecoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZ> ();
+    pcl::io::OctreePointCloudCompression<pcl::PointXYZRGB> (compression_profile,
+        false, d, d, true, 50, true, 4);
+  auto PointCloudDecoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZRGB> ();
 
   std::stringstream compressedData;
 
