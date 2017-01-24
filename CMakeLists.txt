@@ -9,10 +9,6 @@ add_definitions(-DPROFILE)
 option(BUILD_ICP "Build the ICP library, requires other packages" ON)
 option(BUILD_ICP_TEST "Build the ICP library test suite, requires other packages" OFF)
 
-if (BUILD_ICP)
-   find_package(Sophus REQUIRED)
-endif()
-
 if(BUILD_ICP_TEST)
   find_package(Calibu REQUIRED)
   find_package(HAL REQUIRED)
