@@ -1,22 +1,22 @@
-function [tf, matched] = icp(ref, src, D, t_init, iter_max)
+function [tf, matched] = icp(ref, src, D, t_init, iter_max, do_scale)
   assignin('base', 'plot_icp', @(ref, src, tf) plot_icp(ref, src, tf));
   if nargin==0
-    assignin('base', 'localize', @(ref, src) localize(ref, src));
+    assignin('base', 'localize', @(ref, src, do_scale) localize(ref, src, do_scale));
     tf = 0;
     matched = 0;
     return
   end
 
   Dmax = 20*D;
-  dt_thresh = 0.05;
+  dt_thresh = 0.01;
   dth_thresh = 0.001;
   scale_thresh = 0.001;
 
   % we'll work with homogenous coords
   n_ref = size(ref, 1);
   n_src = size(src, 1);
-  ref = [ref ones(n_ref, 1)];
-  src = [src ones(n_src, 1)];
+  assert(size(ref, 2) == 4);
+  assert(size(src, 2) == 4);
 
   % find Is-a-Numbers
   refIaN = find(~isnan(ref(:,1)));
@@ -30,8 +30,10 @@ function [tf, matched] = icp(ref, src, D, t_init, iter_max)
   tf = eye(4);
   if nargin > 3
     % apply initial transform
-    src = t_init * src;
+    src = (t_init * src')';
     tf = t_init;
+  else
+    do_scale = false;
   end
 
   if nargin < 5
@@ -60,7 +62,7 @@ function [tf, matched] = icp(ref, src, D, t_init, iter_max)
     assert(size(matches, 2) == 2);
 
     % calculate transformation
-    Tmat = localize(ref(matches(:,2),:), src(matches(:,1),:));
+    Tmat = localize(ref(matches(:,2),:), src(matches(:,1),:), do_scale);
     tf = Tmat * tf;
 
     % apply to source cloud
@@ -84,7 +86,10 @@ function [Dmax] = choose_xi(dist, idx)
   Dmax = 100;
 end
 
-function [tf] = localize(ref, src)
+function [tf] = localize(ref, src, do_scale)
+  if nargin==2
+    do_scale = false;
+  end
   assert(size(ref, 2) == 4);
   assert(size(src, 2) == 4);
   assert(~any(isnan(ref(:))));
@@ -94,12 +99,18 @@ function [tf] = localize(ref, src)
   ref = ref(:,1:3)./ref(:,4);
   src = src(:,1:3)./src(:,4);
 
+  assert(all(~isinf(ref(:))));
+  assert(all(~isinf(src(:))));
+
   ref_centroid = mean(ref);
   src_centroid = mean(src);
 
-  scale = mean(sqrt(sum((src - src_centroid).^2, 2)./...
-  sum((ref - ref_centroid).^2, 2)));
-  assert(all(size(scale) == [1 1]));
+  if do_scale
+    scale = mean(sqrt(sum((src - src_centroid).^2, 2)./...
+    sum((ref - ref_centroid).^2, 2)));
+  else
+    scale = 1.;
+  end
 
   M = ((src - src_centroid)/scale)' * (ref - ref_centroid);
   [u s v] = svd(M);
@@ -116,10 +127,9 @@ function [] = plot_icp(ref, src, tf)
   n_src = size(src, 1);
   figure;
   hold on
-  pcshow(src(:,1:3), 'red')
+  pcshow(src(:,1:3), [1 .5 .5])
   pcshow(ref(:,1:3), 'blue')
-  src_m = tf * [src ones(n_src, 1)]';
-  src_m = src_m(1:3,:)';
-  pcshow(src_m, 'green')
+  src_m = (tf * src')';
+  pcshow(src_m(:,1:3), 'red')
   hold off
 end
