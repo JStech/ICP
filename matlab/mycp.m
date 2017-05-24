@@ -1,0 +1,114 @@
+function [tf, matched] = mycp(ref, src, t_init, iter_max, do_scale)
+  global beta
+  w = 640;
+  h = 480;
+  beta = 2.0;
+  icp;
+
+  dt_thresh = 0.01;
+  dth_thresh = 0.001;
+  scale_thresh = 0.001;
+
+  % we'll work with homogenous coords
+  n_ref = size(ref, 1);
+  n_src = size(src, 1);
+  assert(size(ref, 2) == 4);
+  assert(size(src, 2) == 4);
+
+  % build kdtree
+  disp('Building kdtree');
+  kdtree = KDTreeSearcher(ref);
+
+  if nargin < 3
+    tf = eye(4);
+  else
+    % apply initial transform
+    src = (t_init * src')';
+    tf = t_init;
+  end
+
+  if nargin < 4
+    iter_max = 30;
+  end
+
+  if nargin < 5
+    do_scale = false;
+  end
+
+  matches = [1:w*h]';
+  for iter=1:iter_max
+    [idx, dist] = knnsearch(kdtree, src);
+
+    init = -1*ones(w, h);
+    init(matches(:,1)) = 1;
+    init(find(isnan(dist))) = 0;
+    matches = find_matches(ref, src, idx, dist, init);
+
+    % calculate transformation
+    Tmat = localize(ref(matches(:,2),:), src(matches(:,1),:), do_scale);
+    tf = Tmat * tf;
+
+    % apply to source cloud
+    src = (Tmat * src')';
+
+    % stopping criteria
+    scale = norm(Tmat(1:3,1));
+    dt = norm(Tmat(1:3,4));
+    dth = acos((trace(Tmat(1:3,1:3))/scale - 1)/2);
+
+    disp(sprintf('Iter %d; scale %f, translation %f, rotation %f', iter, scale, dt, dth));
+
+    if dt < dt_thresh && dth < dth_thresh && abs(scale-1) < scale_thresh
+      break;
+    end
+  end
+  matched = matches;
+end
+
+function [matches] = find_matches(ref, src, idx, dist, init)
+  global beta
+  assert(all(size(init)==[640 480]))
+  [h w] = size(init);
+  y = reshape(dist, [h w]);
+  z = init;
+
+  if sum(z(:)==1) > 2
+    in_mean = mean(reshape(y(z==1), 1, []), 'omitnan');
+    in_std = std(reshape(y(z==1), 1, []), 'omitnan');
+  else
+    in_mean = min(y(:));
+    in_std = std(y(:), 'omitnan');
+  end
+
+  if sum(z(:)==-1) > 2
+    out_mean = mean(reshape(y(z==-1), 1, []), 'omitnan');
+    out_std = std(reshape(y(z==-1), 1, []), 'omitnan');
+  else
+    out_mean = max(y(:));
+    out_std = std(y(:), 'omitnan');
+  end
+  assert(~isnan(in_mean));
+  assert(~isnan(in_std));
+  assert(~isnan(out_mean));
+  assert(~isnan(out_std));
+
+  for i=1:10
+    % E-step
+    mean_field = ([z(2:end,:); zeros(1, w)] + [zeros(1, w); z(1:end-1,:)] + [z(:,2:end) zeros(h, 1)] + [zeros(h, 1) z(:,1:end-1)])/4;
+    r_in = beta*mean_field - log(in_std) - (y - in_mean).^2/(2*in_std.^2);
+    r_out = -beta*mean_field - log(out_std) - (y - out_mean).^2/(2*out_std.^2);
+    z = 2*exp(r_in) ./ (exp(r_out) + exp(r_in)) - 1;
+    z(isnan(y)) = 0;
+    % M-step
+    in_mean = sum(reshape((1+z)/2.*y, [], 1), 'omitnan')...
+      /sum(reshape((1+z)/2, [], 1), 'omitnan');
+    in_std = sqrt(sum(reshape((1+z)/2.*y.^2, [], 1), 'omitnan')...
+      /sum(reshape((1+z)/2, [], 1), 'omitnan'));
+    out_mean = sum(reshape((1-z)/2.*y, [], 1), 'omitnan')...
+      /sum(reshape((1-z)/2, [], 1), 'omitnan');
+    out_std = sqrt(sum(reshape((1-z)/2.*y.^2, [], 1), 'omitnan')...
+      /sum(reshape((1-z)/2, [], 1), 'omitnan'));
+    assert(~any(isnan([in_mean, in_std, out_mean, out_std])));
+  end
+  matches = [find(z > 0) idx(find(z>0))];
+end

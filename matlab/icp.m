@@ -1,7 +1,9 @@
 function [tf, matched] = icp(ref, src, D, t_init, iter_max, do_scale)
-  assignin('base', 'plot_icp', @(ref, src, tf) plot_icp(ref, src, tf));
+  assignin('caller', 'plot_icp', @(ref, src, tf) plot_icp(ref, src, tf));
   if nargin==0
-    assignin('base', 'localize', @(ref, src, do_scale) localize(ref, src, do_scale));
+    assignin('caller', 'localize', @(ref, src, do_scale) localize(ref, src, do_scale));
+    assignin('caller', 'mat2aa', @(m) mat2aa(m));
+    assignin('caller', 'aa2mat', @(axis, angle) aa2mat(axis, angle));
     tf = 0;
     matched = 0;
     return
@@ -18,26 +20,24 @@ function [tf, matched] = icp(ref, src, D, t_init, iter_max, do_scale)
   assert(size(ref, 2) == 4);
   assert(size(src, 2) == 4);
 
-  % find Is-a-Numbers
-  refIaN = find(~isnan(ref(:,1)));
-  srcIaN = find(~isnan(src(:,1)));
-
   % build kdtree
   disp('Building kdtree');
   kdtree = KDTreeSearcher(ref);
 
-  % initialize transform
-  tf = eye(4);
-  if nargin > 3
+  if nargin < 4
+    tf = eye(4);
+  else
     % apply initial transform
     src = (t_init * src')';
     tf = t_init;
-  else
-    do_scale = false;
   end
 
   if nargin < 5
     iter_max = 30;
+  end
+
+  if nargin < 6
+    do_scale = false;
   end
 
   for iter=1:iter_max
@@ -83,6 +83,7 @@ function [tf, matched] = icp(ref, src, D, t_init, iter_max, do_scale)
 end
 
 function [Dmax] = choose_xi(dist, idx)
+  error('Not implemented');
   Dmax = 100;
 end
 
@@ -132,4 +133,16 @@ function [] = plot_icp(ref, src, tf)
   src_m = (tf * src')';
   pcshow(src_m(:,1:3), 'red')
   hold off
+end
+
+function [axis, angle] = mat2aa(m)
+  angle = acos((m(1,1) + m(2,2) + m(3,3) - 1)/2);
+  axis = [m(3, 2) - m(2, 3); m(1, 3) - m(3, 1); m(2, 1) - m(1, 2)];
+  axis = axis ./ norm(axis);
+end
+
+function [m] = aa2mat(axis, angle)
+  m = [cos(angle) + axis(1)^2*(1-cos(angle)), axis(1)*axis(2)*(1-cos(angle))-axis(3)*sin(angle), axis(1)*axis(3)*(1-cos(angle)) + axis(2)*sin(angle);
+  axis(2)*axis(1)*(1-cos(angle))+axis(3)*sin(angle), cos(angle)+axis(2)^2*(1-cos(angle)), axis(2)*axis(3)*(1-cos(angle))-axis(1)*sin(angle);
+  axis(3)*axis(1)*(1-cos(angle))-axis(2)*sin(angle), axis(3)*axis(2)*(1-cos(angle)) + axis(1)*sin(angle), cos(angle) + axis(3)^2*(1-cos(angle))];
 end
