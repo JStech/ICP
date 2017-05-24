@@ -1,8 +1,9 @@
 function [tf, matched] = mycp(ref, src, t_init, iter_max, do_scale)
-  global beta
+  global beta gamma
   w = 640;
   h = 480;
   beta = 2.0;
+  gamma = 2.0;
   icp;
 
   dt_thresh = 0.01;
@@ -35,6 +36,7 @@ function [tf, matched] = mycp(ref, src, t_init, iter_max, do_scale)
     do_scale = false;
   end
 
+  all_matches = cell(0);
   matches = [1:w*h]';
   for iter=1:iter_max
     [idx, dist] = knnsearch(kdtree, src);
@@ -43,6 +45,7 @@ function [tf, matched] = mycp(ref, src, t_init, iter_max, do_scale)
     init(matches(:,1)) = 1;
     init(find(isnan(dist))) = 0;
     matches = find_matches(ref, src, idx, dist, init);
+    all_matches{iter} = matches;
 
     % calculate transformation
     Tmat = localize(ref(matches(:,2),:), src(matches(:,1),:), do_scale);
@@ -62,11 +65,12 @@ function [tf, matched] = mycp(ref, src, t_init, iter_max, do_scale)
       break;
     end
   end
+  assignin('base', 'matches_mycp', all_matches);
   matched = matches;
 end
 
 function [matches] = find_matches(ref, src, idx, dist, init)
-  global beta
+  global beta gamma
   assert(all(size(init)==[640 480]))
   [h w] = size(init);
   y = reshape(dist, [h w]);
@@ -92,23 +96,28 @@ function [matches] = find_matches(ref, src, idx, dist, init)
   assert(~isnan(out_mean));
   assert(~isnan(out_std));
 
-  for i=1:10
+  for i=1:3
     % E-step
+    last_z = z;
     mean_field = ([z(2:end,:); zeros(1, w)] + [zeros(1, w); z(1:end-1,:)] + [z(:,2:end) zeros(h, 1)] + [zeros(h, 1) z(:,1:end-1)])/4;
-    r_in = beta*mean_field - log(in_std) - (y - in_mean).^2/(2*in_std.^2);
-    r_out = -beta*mean_field - log(out_std) - (y - out_mean).^2/(2*out_std.^2);
+    r_in = beta*mean_field - log(in_std) - (y - in_mean).^2/(2*in_std.^2) + gamma;
+    r_out = -beta*mean_field - log(out_std) - (y - out_mean).^2/(2*out_std.^2) - gamma;
     z = 2*exp(r_in) ./ (exp(r_out) + exp(r_in)) - 1;
-    z(isnan(y)) = 0;
     % M-step
-    in_mean = sum(reshape((1+z)/2.*y, [], 1), 'omitnan')...
-      /sum(reshape((1+z)/2, [], 1), 'omitnan');
-    in_std = sqrt(sum(reshape((1+z)/2.*y.^2, [], 1), 'omitnan')...
-      /sum(reshape((1+z)/2, [], 1), 'omitnan'));
-    out_mean = sum(reshape((1-z)/2.*y, [], 1), 'omitnan')...
-      /sum(reshape((1-z)/2, [], 1), 'omitnan');
-    out_std = sqrt(sum(reshape((1-z)/2.*y.^2, [], 1), 'omitnan')...
-      /sum(reshape((1-z)/2, [], 1), 'omitnan'));
+    in_mean = sum((1+z(:))/2.*y(:), 'omitnan')...
+      /sum((1+z(:))/2, 'omitnan');
+    in_std = sqrt(sum((1+z(:))/2.*y(:).^2, 'omitnan')...
+      /sum((1+z(:))/2, 'omitnan'));
+    out_mean = sum((1-z(:))/2.*y(:), 'omitnan')...
+      /sum((1-z(:))/2, 'omitnan');
+    out_std = sqrt(sum((1-z(:))/2.*y(:).^2, 'omitnan')...
+      /sum((1-z(:))/2, 'omitnan'));
+    assert(in_mean < out_mean);
     assert(~any(isnan([in_mean, in_std, out_mean, out_std])));
+    if ~any(z(:) .* last_z(:) < 0)
+      i
+      break
+    end
   end
   matches = [find(z > 0) idx(find(z>0))];
 end

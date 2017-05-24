@@ -1,5 +1,5 @@
 function [tf, matched] = icp(ref, src, D, t_init, iter_max, do_scale)
-  assignin('caller', 'plot_icp', @(ref, src, tf) plot_icp(ref, src, tf));
+  assignin('caller', 'plot_icp', @(ref, src, tf, ds) plot_icp(ref, src, tf, ds));
   if nargin==0
     assignin('caller', 'localize', @(ref, src, do_scale) localize(ref, src, do_scale));
     assignin('caller', 'mat2aa', @(m) mat2aa(m));
@@ -40,6 +40,7 @@ function [tf, matched] = icp(ref, src, D, t_init, iter_max, do_scale)
     do_scale = false;
   end
 
+  all_matches = cell(0);
   for iter=1:iter_max
     [idx, dist] = knnsearch(kdtree, src);
 
@@ -60,6 +61,7 @@ function [tf, matched] = icp(ref, src, D, t_init, iter_max, do_scale)
     matches = find(dist < Dmax);
     matches = [matches idx(matches)];
     assert(size(matches, 2) == 2);
+    all_matches{iter} = matches;
 
     % calculate transformation
     Tmat = localize(ref(matches(:,2),:), src(matches(:,1),:), do_scale);
@@ -79,6 +81,7 @@ function [tf, matched] = icp(ref, src, D, t_init, iter_max, do_scale)
       break;
     end
   end
+  assignin('base', 'matches_icp', all_matches);
   matched = matches;
 end
 
@@ -124,14 +127,17 @@ function [tf] = localize(ref, src, do_scale)
   tf = T2 * R * T1;
 end
 
-function [] = plot_icp(ref, src, tf)
+function [] = plot_icp(ref, src, tf, ds)
+  if ~exist('ds')
+    ds = 1;
+  end
   n_src = size(src, 1);
   figure;
   hold on
-  pcshow(src(:,1:3), [1 .5 .5])
-  pcshow(ref(:,1:3), 'blue')
+  pcshow(src(1:ds:end,1:3), [1 .5 .5])
+  pcshow(ref(1:ds:end,1:3), 'blue')
   src_m = (tf * src')';
-  pcshow(src_m(:,1:3), 'red')
+  pcshow(src_m(1:ds:end,1:3), 'red')
   hold off
 end
 
