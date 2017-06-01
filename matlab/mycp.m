@@ -2,8 +2,8 @@ function [tf, matched] = mycp(ref, src, t_init, iter_max, do_scale)
   global beta gamma
   w = 640;
   h = 480;
-  beta = 2.0;
-  gamma = 2.0;
+  beta = 4.0;
+  gamma = 0.0;
   icp;
 
   dt_thresh = 0.01;
@@ -115,7 +115,6 @@ function [matches] = find_matches(ref, src, idx, dist, init)
     assert(in_mean < out_mean);
     assert(~any(isnan([in_mean, in_std, out_mean, out_std])));
     if ~any(z(:) .* last_z(:) < 0)
-      i
       break
     end
   end
