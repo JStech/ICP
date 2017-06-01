@@ -86,8 +86,18 @@ function [tf, matched] = icp(ref, src, D, t_init, iter_max, do_scale)
 end
 
 function [Dmax] = choose_xi(dist, idx)
-  error('Not implemented');
-  Dmax = 100;
+  [h, e] = histcounts(dist, 20);
+  [m, i] = max(h);
+  for ii=1:20
+    if i+ii == 20
+      Dmax = e(20);
+      break
+    end
+    if h(i+ii-1) > h(i+ii) && h(i+ii) < h(i+ii+1)
+      Dmax = e(i+ii)
+      break;
+    end
+  end
 end
 
 function [tf] = localize(ref, src, do_scale)
