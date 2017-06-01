@@ -20,6 +20,8 @@ int main(int argc, char *argv[])
   std::shared_ptr<calibu::Rig<double>> rig =
     calibu::ReadXmlRig(argv[1]);
   float focal_length = rig->cameras_[1]->GetParams()[0];
+  float u0 = rig->cameras_[1]->GetParams()[2];
+  float v0 = rig->cameras_[1]->GetParams()[3];
 
   // open image data
   hal::Camera camera(argv[2]);
@@ -76,13 +78,12 @@ int main(int argc, char *argv[])
           continue;
         }
         // unproject depth
-        pixel(0) = (float) (i/w);
-        pixel(1) = (float) (i%w);
+        pixel(0) = ((float) (h - i/w)) - v0;
+        pixel(1) = ((float) (i%w)) - u0;
         float depth = d_img[i] / 10000.0;
-        depth *= std::sqrt(focal_length*focal_length + (i/w - h/2)*(i/w - h/2)
-            + (i%w - w/2)*(i%w - w/2));
-        depth /= 10.;
-        point = -depth * rig->cameras_[1]->Unproject(pixel);
+        depth *= std::sqrt(focal_length*focal_length + pixel(0)*pixel(0)
+            + pixel(1)*pixel(1))/focal_length;
+        point = depth * rig->cameras_[1]->Unproject(pixel);
 
         // append to point cloud
         cloud.points[i+cloud.height*h*w].x = point(0);
