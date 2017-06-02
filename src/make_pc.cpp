@@ -78,12 +78,12 @@ int main(int argc, char *argv[])
           continue;
         }
         // unproject depth
-        pixel(0) = h - (float) (i/w);
-        pixel(1) = (float) (i%w);
+        pixel(0) = (float) (i%w);
+        pixel(1) = (float) (i/w);
         float depth = d_img[i] / 10000.0;
         depth *= std::sqrt(focal_length*focal_length +
-            (pixel(0) - v0)*(pixel(0) - v0) +
-            (pixel(1) - u0)*(pixel(1) - u0))/focal_length;
+            (pixel(0) - u0)*(pixel(0) - u0) +
+            (pixel(1) - v0)*(pixel(1) - v0))/focal_length;
         point = depth * rig->cameras_[1]->Unproject(pixel);
 
         // append to point cloud

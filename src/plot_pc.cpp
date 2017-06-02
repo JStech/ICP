@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
   // create 3d view
   pangolin::OpenGlRenderState stacks3d(
       pangolin::ProjectionMatrix(640, 480, 420, 420, 320, 240, 1E-3, 10*1000),
-      pangolin::ModelViewLookAt(-10, 0, -16, 0, 0, 0, pangolin::AxisNegZ)
+      pangolin::ModelViewLookAt(0, -.2, 0, 0, 0, 1, pangolin::AxisNegY)
       );
   SceneGraph::GLSceneGraph glGraph;
   pangolin::View threeD_view;
