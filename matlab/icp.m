@@ -1,4 +1,4 @@
-function [tf, matched] = icp(ref, src, D, t_init, iter_max, do_scale)
+function [tf, iter, all_matches] = icp(ref, src, params)
   assignin('caller', 'plot_icp', @(ref, src, tf, ds) plot_icp(ref, src, tf, ds));
   if nargin==0
     assignin('caller', 'localize', @(ref, src, do_scale) localize(ref, src, do_scale));
@@ -9,10 +9,13 @@ function [tf, matched] = icp(ref, src, D, t_init, iter_max, do_scale)
     return
   end
 
-  Dmax = 20*D;
-  dt_thresh = 0.01;
-  dth_thresh = 0.001;
-  scale_thresh = 0.001;
+  if strcmp(params.mode, 'dynamic')
+    Dmax = 20*params.D;
+  end
+
+  % drop NaNs
+  ref = ref(find(~isnan(ref(:,1))), :);
+  src = src(find(~isnan(src(:,1))), :);
 
   % we'll work with homogenous coords
   n_ref = size(ref, 1);
@@ -21,50 +24,51 @@ function [tf, matched] = icp(ref, src, D, t_init, iter_max, do_scale)
   assert(size(src, 2) == 4);
 
   % build kdtree
-  disp('Building kdtree');
+  %disp('Building kdtree');
   kdtree = KDTreeSearcher(ref);
 
-  if nargin < 4
-    tf = eye(4);
-  else
-    % apply initial transform
-    src = (t_init * src')';
-    tf = t_init;
-  end
-
-  if nargin < 5
-    iter_max = 30;
-  end
-
-  if nargin < 6
-    do_scale = false;
-  end
+  tf = params.t_init;
+  src = (tf * src')';
 
   all_matches = cell(0);
-  for iter=1:iter_max
+  for iter=1:params.iter_max
     [idx, dist] = knnsearch(kdtree, src);
 
-    matches = find(dist < Dmax);
-    mu = mean(dist(matches));
-    sigma = std(dist(matches));
+    switch params.mode
+      case 'all'
+        matches = [[1:n_src]' idx];
+      case 'pct'
+        [~, matches] = sort(dist);
+        matches = matches(1:floor(0.9*n_src));
+        matches = [matches idx(matches)];
+      case 'sigma'
+        mu = mean(dist);
+        sigma = std(dist);
+        Dmax = mu + 2.5*sigma;
+        matches = find(dist < Dmax);
+        matches = [matches idx(matches)];
+      case 'dynamic'
+        matches = find(dist < Dmax);
+        mu = mean(dist(matches));
+        sigma = std(dist(matches));
 
-    if mu < D
-      Dmax = mu + 3*sigma;
-    elseif mu < 3*D
-      Dmax = mu + 2*sigma;
-    elseif mu < 6*D
-      Dmax = mu + sigma;
-    else
-      Dmax = choose_xi(dist, idx);
+        if mu < params.D
+          Dmax = mu + 3*sigma;
+        elseif mu < 3*params.D
+          Dmax = mu + 2*sigma;
+        elseif mu < 6*params.D
+          Dmax = mu + sigma;
+        else
+          Dmax = choose_xi(dist, idx);
+        end
+
+        matches = find(dist < Dmax);
+        matches = [matches idx(matches)];
     end
-
-    matches = find(dist < Dmax);
-    matches = [matches idx(matches)];
-    assert(size(matches, 2) == 2);
     all_matches{iter} = matches;
 
     % calculate transformation
-    Tmat = localize(ref(matches(:,2),:), src(matches(:,1),:), do_scale);
+    Tmat = localize(ref(matches(:,2),:), src(matches(:,1),:), params.do_scale);
     tf = Tmat * tf;
 
     % apply to source cloud
@@ -75,14 +79,13 @@ function [tf, matched] = icp(ref, src, D, t_init, iter_max, do_scale)
     dt = norm(Tmat(1:3,4));
     dth = acos((trace(Tmat(1:3,1:3))/scale - 1)/2);
 
-    disp(sprintf('Iter %d; scale %f, translation %f, rotation %f', iter, scale, dt, dth));
+    %disp(sprintf('Iter %d; scale %f, translation %f, rotation %f', iter, scale, dt, dth));
 
-    if dt < dt_thresh && dth < dth_thresh && abs(scale-1) < scale_thresh
+    if dt < params.dt_thresh && dth < params.dth_thresh && ...
+          abs(scale-1) < params.scale_thresh
       break;
     end
   end
-  assignin('base', 'matches_icp', all_matches);
-  matched = matches;
 end
 
 function [Dmax] = choose_xi(dist, idx)

@@ -1,4 +1,4 @@
-function [tf, matched] = mycp(ref, src, t_init, iter_max, do_scale)
+function [tf, iter, matched] = mycp(ref, src, params)
   global beta gamma
   w = 640;
   h = 480;
@@ -17,28 +17,17 @@ function [tf, matched] = mycp(ref, src, t_init, iter_max, do_scale)
   assert(size(src, 2) == 4);
 
   % build kdtree
-  disp('Building kdtree');
+  %disp('Building kdtree');
   kdtree = KDTreeSearcher(ref);
 
-  if nargin < 3
-    tf = eye(4);
-  else
-    % apply initial transform
-    src = (t_init * src')';
-    tf = t_init;
-  end
+  tf = params.t_init;
 
-  if nargin < 4
-    iter_max = 30;
-  end
-
-  if nargin < 5
-    do_scale = false;
-  end
+  % apply initial transform
+  src = (params.t_init * src')';
 
   all_matches = cell(0);
   matches = [1:w*h]';
-  for iter=1:iter_max
+  for iter=1:params.iter_max
     [idx, dist] = knnsearch(kdtree, src);
 
     init = -1*ones(w, h);
@@ -48,7 +37,7 @@ function [tf, matched] = mycp(ref, src, t_init, iter_max, do_scale)
     all_matches{iter} = matches;
 
     % calculate transformation
-    Tmat = localize(ref(matches(:,2),:), src(matches(:,1),:), do_scale);
+    Tmat = localize(ref(matches(:,2),:), src(matches(:,1),:), params.do_scale);
     tf = Tmat * tf;
 
     % apply to source cloud
@@ -59,7 +48,7 @@ function [tf, matched] = mycp(ref, src, t_init, iter_max, do_scale)
     dt = norm(Tmat(1:3,4));
     dth = acos((trace(Tmat(1:3,1:3))/scale - 1)/2);
 
-    disp(sprintf('Iter %d; scale %f, translation %f, rotation %f', iter, scale, dt, dth));
+    %disp(sprintf('Iter %d; scale %f, translation %f, rotation %f', iter, scale, dt, dth));
 
     if dt < dt_thresh && dth < dth_thresh && abs(scale-1) < scale_thresh
       break;
