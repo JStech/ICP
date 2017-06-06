@@ -24,7 +24,9 @@ function [tf, iter, all_matches] = icp(ref, src, params)
   assert(size(src, 2) == 4);
 
   % build kdtree
-  %disp('Building kdtree');
+  if params.verbose
+    disp('Building kdtree');
+  end
   kdtree = KDTreeSearcher(ref);
 
   tf = params.t_init;
@@ -79,7 +81,9 @@ function [tf, iter, all_matches] = icp(ref, src, params)
     dt = norm(Tmat(1:3,4));
     dth = acos((trace(Tmat(1:3,1:3))/scale - 1)/2);
 
-    %disp(sprintf('Iter %d; scale %f, translation %f, rotation %f', iter, scale, dt, dth));
+    if params.verbose
+      disp(sprintf('Iter %d; scale %f, translation %f, rotation %f', iter, scale, dt, dth));
+    end
 
     if dt < params.dt_thresh && dth < params.dth_thresh && ...
           abs(scale-1) < params.scale_thresh

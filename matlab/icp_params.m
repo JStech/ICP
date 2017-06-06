@@ -11,5 +11,7 @@ classdef icp_params
     D = 1.;
     beta = 2.;
     gamma = 0.;
+    debug = false;
+    verbose = false;
   end
 end

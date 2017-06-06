@@ -17,7 +17,9 @@ function [tf, iter, matched] = mycp(ref, src, params)
   assert(size(src, 2) == 4);
 
   % build kdtree
-  %disp('Building kdtree');
+  if params.verbose
+    disp('Building kdtree');
+  end
   kdtree = KDTreeSearcher(ref);
 
   tf = params.t_init;
@@ -48,7 +50,9 @@ function [tf, iter, matched] = mycp(ref, src, params)
     dt = norm(Tmat(1:3,4));
     dth = acos((trace(Tmat(1:3,1:3))/scale - 1)/2);
 
-    %disp(sprintf('Iter %d; scale %f, translation %f, rotation %f', iter, scale, dt, dth));
+    if params.verbose
+      disp(sprintf('Iter %d; scale %f, translation %f, rotation %f', iter, scale, dt, dth));
+    end
 
     if dt < dt_thresh && dth < dth_thresh && abs(scale-1) < scale_thresh
       break;
@@ -101,6 +105,20 @@ function [matches] = find_matches(ref, src, idx, dist, init)
       /sum((1-z(:))/2, 'omitnan');
     out_std = sqrt(sum((1-z(:))/2.*y(:).^2, 'omitnan')...
       /sum((1-z(:))/2, 'omitnan'));
+    if in_mean >= out_mean && params.debug
+      dbob.w = w;
+      dbob.h = h;
+      dbob.r_in = r_in;
+      dbob.r_out = r_out;
+      dbob.z = z;
+      dbob.last_z = last_z;
+      dbob.y = y;
+      dbob.in_mean = in_mean;
+      dbob.out_mean = out_mean;
+      dbob.in_std = in_std;
+      dbob.out_std = out_std;
+      assignin('base', 'mycp_debug', dbob);
+    end
     assert(in_mean < out_mean);
     assert(~any(isnan([in_mean, in_std, out_mean, out_std])));
     if ~any(z(:) .* last_z(:) < 0)
