@@ -28,13 +28,16 @@ function [tf, iter, matched] = mycp(ref, src, params)
   src = (params.t_init * src')';
 
   all_matches = cell(0);
-  matches = [1:w*h]';
+  matches = 0;
   for iter=1:params.iter_max
     [idx, dist] = knnsearch(kdtree, src);
 
     init = -1*ones(w, h);
-    init(matches(:,1)) = 1;
-    init(find(isnan(dist))) = 0;
+    if matches==0
+      init(find(dist < prctile(dist, 90))) = 1;
+    else
+      init(matches(:,1)) = 1;
+    end
     matches = find_matches(ref, src, idx, dist, init);
     all_matches{iter} = matches;
 
