@@ -61,7 +61,8 @@ float choose_xi(std::vector<std::vector<float>> nearest_d,
 }
 
 Eigen::Matrix4f localize(PointCloud<PointXYZ>::Ptr reference,
-    PointCloud<PointXYZ>::Ptr source, std::vector<int> match_i) {
+    PointCloud<PointXYZ>::Ptr source, std::vector<int> match_i,
+    bool do_scale) {
 
   // find centroids
   Eigen::Vector3f src_centroid = Eigen::Vector3f::Zero();
@@ -76,15 +77,19 @@ Eigen::Matrix4f localize(PointCloud<PointXYZ>::Ptr reference,
   src_centroid /= c;
   ref_centroid /= c;
 
-  // estimate scale transform
-  // scale variable is source/reference
   double scale = 0;
-  for (size_t i=0; i<match_i.size(); i++) {
-    if (match_i[i]==-1) continue;
-    scale += (source->points[i].getVector3fMap() - src_centroid).norm() /
-      (reference->points[match_i[i]].getVector3fMap() - ref_centroid).norm();
+  if (do_scale) {
+    // estimate scale transform
+    // scale variable is source/reference
+    for (size_t i=0; i<match_i.size(); i++) {
+      if (match_i[i]==-1) continue;
+      scale += (source->points[i].getVector3fMap() - src_centroid).norm() /
+        (reference->points[match_i[i]].getVector3fMap() - ref_centroid).norm();
+    }
+    scale /= c;
+  } else {
+    scale = 1.0;
   }
-  scale /= c;
 
   // perform SVD to recover rotation matrix
   // calculate cross correlation
@@ -110,7 +115,7 @@ Eigen::Matrix4f localize(PointCloud<PointXYZ>::Ptr reference,
 
 // input: reference and source point clouds, prior SE3 transform guess
 // output: SE3 transform from source to reference, total error (of some sort TODO)
-float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
+float ICP_zhang(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
     Eigen::Matrix<float, 4, 4> &Trs, float D, float dt_thresh, float dth_thresh,
     int max_iter, std::vector<bool> *matched) {
 
@@ -224,7 +229,7 @@ float ICP(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
 #endif
 
     // compute motion
-    Tmat = localize(reference, source, match_i);
+    Tmat = localize(reference, source, match_i, true);
 
 #ifdef PROFILE
     stop = std::chrono::high_resolution_clock::now();

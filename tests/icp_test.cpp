@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
   }
 
   Eigen::Matrix<float, 4, 4> m = localize(ref_cloud.makeShared(), src_cloud.makeShared(),
-      match_i);
+      match_i, true);
 
   bool passed=true;
   for (size_t i=0; i<src_cloud.points.size(); i++) {
@@ -135,7 +135,7 @@ int main(int argc, char* argv[]) {
   Eigen::Matrix<float, 4, 4> Trs = Eigen::Matrix<float, 4, 4>::Identity();
 
   std::vector<bool> matched;
-  ICP(real_ref_cloud->makeShared(), real_src_cloud->makeShared(), Trs, 0.001,
+  ICP_zhang(real_ref_cloud->makeShared(), real_src_cloud->makeShared(), Trs, 0.001,
       0.0001, 0.001, 50, &matched);
   std::cout << Trs << std::endl;
 
