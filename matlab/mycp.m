@@ -103,11 +103,11 @@ function [matches] = find_matches(ref, src, idx, dist, init)
     in_mean = sum((1+z(:))/2.*y(:), 'omitnan')...
       /sum((1+z(:))/2, 'omitnan');
     in_std = sqrt(sum((1+z(:))/2.*y(:).^2, 'omitnan')...
-      /sum((1+z(:))/2, 'omitnan'));
+      /sum((1+z(:))/2, 'omitnan') - in_mean.^2);
     out_mean = sum((1-z(:))/2.*y(:), 'omitnan')...
       /sum((1-z(:))/2, 'omitnan');
     out_std = sqrt(sum((1-z(:))/2.*y(:).^2, 'omitnan')...
-      /sum((1-z(:))/2, 'omitnan'));
+      /sum((1-z(:))/2, 'omitnan') - out_mean.^2);
     if in_mean >= out_mean && params.debug
       dbob.w = w;
       dbob.h = h;
