@@ -72,6 +72,7 @@ if(BUILD_ICP)
   add_executable( aggregate_pc src/aggregate_pc.cpp )
   add_executable( make_pc src/make_pc.cpp )
   add_executable( plot_pc src/plot_pc.cpp )
+  add_executable( edit_pc src/edit_pc.cpp )
 
   target_link_libraries( aggregate_pc
     ${HAL_LIBRARIES}
@@ -92,6 +93,10 @@ if(BUILD_ICP)
     ${HAL_LIBRARIES}
     ${Pangolin_LIBRARIES}
     ${SceneGraph_LIBRARIES}
+    ${PCL_LIBRARIES}
+    )
+
+  target_link_libraries( edit_pc
     ${PCL_LIBRARIES}
     )
   endif()
