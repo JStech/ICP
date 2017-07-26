@@ -18,6 +18,16 @@
 using namespace pcl;
 
 template<typename T>
+std::vector<T> drop_inf_nan(const std::vector<T> &orig) {
+  std::vector<T> ret(orig);
+  ret.erase(std::remove_if(ret.begin(), ret.end(),
+        [](T x){return std::isinf(x);}), ret.end());
+  ret.erase(std::remove_if(ret.begin(), ret.end(),
+        [](T x){return std::isnan(x);}), ret.end());
+  return ret;
+}
+
+template<typename T>
 std::vector<T> flatten(const std::vector<std::vector<T>> &orig) {
   std::vector<T> ret;
   for (const auto &e: orig) {
@@ -161,8 +171,20 @@ std::vector<int> find_matches(float beta, std::vector<int> idx,
   double out_mean = 0.;
   double out_std = 0.;
   int out_n = 0;
+  double min_d = HUGE_VAL;
+  double max_d = 0;
 
   for (size_t i=0; i<idx.size(); i++) {
+    if (std::isnan(dist[i]) || std::isinf(dist[i])) {
+      continue;
+    }
+    if (dist[i] > max_d) {
+      max_d = dist[i];
+    }
+    if (dist[i] < min_d) {
+      min_d = dist[i];
+    }
+
     if (init[i]>=0) {
       in_mean += dist[i];
       in_std += dist[i]*dist[i];
@@ -178,14 +200,25 @@ std::vector<int> find_matches(float beta, std::vector<int> idx,
   out_mean = out_mean/out_n;
   out_std = std::sqrt(out_std/out_n - out_mean*out_mean);
 
-  std::vector< std::vector<float> > z(h, std::vector<float>(w));
+  // handle when initialized with all inliers or all outliers
+  if (in_n == 0) {
+    in_mean = min_d;
+    in_std = out_std;
+  }
+  if (out_n == 0) {
+    out_mean = max_d;
+    out_std = in_std;
+  }
 
   if (std::isnan(in_mean) || std::isnan(in_std) || std::isnan(out_mean) ||
       std::isnan(out_std)) {
     std::cerr << "NaN! in_mean: " << in_mean << ", in_std: " << in_std <<
-      ", out_mean: " << out_mean << ", out_std: " << out_std << std::endl;
+      ", in_n: " << in_n << ", out_mean: " << out_mean << ", out_std: " <<
+      out_std << ", out_n: " << out_n << std::endl;
     return std::vector<int>();
   }
+
+  std::vector< std::vector<float> > z(h, std::vector<float>(w));
 
   // E-step
   for (int iters=0; iters<max_iters; iters++) {
@@ -198,10 +231,12 @@ std::vector<int> find_matches(float beta, std::vector<int> idx,
         if (j>0) mean_field += z[i][j-1];
         if (j<w-1) mean_field += z[i][j+1];
         mean_field/=4;
-        float r_in = beta*mean_field - std::log(in_std) -
-          (dist[ij] - in_mean)*(dist[ij] - in_mean)/(2*in_std*in_std);
-        float r_out = beta*mean_field - std::log(out_std) -
-          (dist[ij] - out_mean)*(dist[ij] - out_mean)/(2*out_std*out_std);
+        float r_in = beta*mean_field - std::log(in_std);
+        float r_out = beta*mean_field - std::log(out_std);
+        if (!std::isnan(dist[ij]) && !std::isinf(dist[ij])) {
+          r_in -= (dist[ij] - in_mean)*(dist[ij] - in_mean)/(2*in_std*in_std);
+          r_out -= (dist[ij] - out_mean)*(dist[ij] - out_mean)/(2*out_std*out_std);
+        }
         z[i][j] = 2*std::exp(r_in) / (std::exp(r_out) + std::exp(r_in)) - 1;
       }
     }
@@ -216,6 +251,9 @@ std::vector<int> find_matches(float beta, std::vector<int> idx,
     for (int i=0; i<h; i++) {
       for (int j=0; j<w; j++) {
         int ij = i*w+j;
+        if (std::isnan(dist[ij]) || std::isinf(dist[ij])) {
+          continue;
+        }
         in_mean += dist[ij] * (1+z[i][j])/2;
         in_std += dist[ij]*dist[ij] * (1+z[i][j])/2;
         in_sum += (1+z[i][j])/2;
@@ -302,7 +340,8 @@ float ICP_hmrf(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr so
 
     // initialize matches
     if (iter==0) {
-      float threshold = quickselect(nearest_d, 0.9*nearest_d.size());
+      std::vector<float> nd_t = drop_inf_nan<float>(nearest_d);
+      float threshold = quickselect(nd_t, 0.9*nd_t.size());
       for (size_t i=0; i<matches.size(); i++) {
         if (nearest_d[i] > threshold) {
           matches[i] = -1;
