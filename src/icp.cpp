@@ -11,10 +11,44 @@
 #ifdef PROFILE
 #include <chrono>
 #include <iostream>
+#include <cassert>
 #endif
 #define MAX_ITER 40
 
 using namespace pcl;
+
+template<typename T>
+std::vector<T> flatten(const std::vector<std::vector<T>> &orig) {
+  std::vector<T> ret;
+  for (const auto &e: orig) {
+    ret.insert(ret.end(), e.begin(), e.end());
+  }
+  return ret;
+}
+
+// return value at position k in list L
+float quickselect(std::vector<float> L, size_t k) {
+  size_t n = L.size();
+  assert(0<=k);
+  assert(k<n);
+  std::vector<float> lt_items;
+  std::vector<float> gt_items;
+  float pivot = L[rand()%n];
+  for (size_t i=0; i<n; i++) {
+    if (L[i] < pivot) {
+      lt_items.push_back(L[i]);
+    } else if (L[i] > pivot) {
+      gt_items.push_back(L[i]);
+    }
+  }
+  if (k < lt_items.size()) {
+    return quickselect(lt_items, k);
+  } else if (k >= n-gt_items.size()) {
+    return quickselect(gt_items, k - (n-gt_items.size()));
+  } else {
+    return pivot;
+  }
+}
 
 float choose_xi(std::vector<std::vector<float>> nearest_d,
     std::vector<int> match_i) {
@@ -111,6 +145,238 @@ Eigen::Matrix4f localize(PointCloud<PointXYZ>::Ptr reference,
   Eigen::Matrix4f T2 = Eigen::Matrix4f::Identity();
   T2.topRightCorner(3, 1) = ref_centroid;
   return T2*R*T1;
+}
+
+std::vector<int> find_matches(float beta, std::vector<int> idx,
+    std::vector<float> dist, std::vector<int> init) {
+  const int h = 480;
+  const int w = 640;
+  assert(idx.size() == h*w);
+  assert(dist.size() == h*w);
+  assert(init.size() == h*w);
+  const int max_iters = 3;
+  double in_mean = 0.;
+  double in_std = 0.;
+  int in_n = 0;
+  double out_mean = 0.;
+  double out_std = 0.;
+  int out_n = 0;
+
+  for (size_t i=0; i<idx.size(); i++) {
+    if (init[i]>=0) {
+      in_mean += dist[i];
+      in_std += dist[i]*dist[i];
+      in_n++;
+    } else {
+      out_mean += dist[i];
+      out_std += dist[i]*dist[i];
+      out_n++;
+    }
+  }
+  in_mean = in_mean/in_n;
+  in_std = std::sqrt(in_std/in_n - in_mean*in_mean);
+  out_mean = out_mean/out_n;
+  out_std = std::sqrt(out_std/out_n - out_mean*out_mean);
+
+  std::vector< std::vector<float> > z(h, std::vector<float>(w));
+
+  if (std::isnan(in_mean) || std::isnan(in_std) || std::isnan(out_mean) ||
+      std::isnan(out_std)) {
+    std::cerr << "NaN! in_mean: " << in_mean << ", in_std: " << in_std <<
+      ", out_mean: " << out_mean << ", out_std: " << out_std << std::endl;
+    return std::vector<int>();
+  }
+
+  // E-step
+  for (int iters=0; iters<max_iters; iters++) {
+    for (int i=0; i<h; i++) {
+      for (int j=0; j<w; j++) {
+        int ij = i*w+j;
+        float mean_field = 0.;
+        if (i>0) mean_field += z[i-1][j];
+        if (i<h-1) mean_field += z[i+1][j];
+        if (j>0) mean_field += z[i][j-1];
+        if (j<w-1) mean_field += z[i][j+1];
+        mean_field/=4;
+        float r_in = beta*mean_field - std::log(in_std) -
+          (dist[ij] - in_mean)*(dist[ij] - in_mean)/(2*in_std*in_std);
+        float r_out = beta*mean_field - std::log(out_std) -
+          (dist[ij] - out_mean)*(dist[ij] - out_mean)/(2*out_std*out_std);
+        z[i][j] = 2*std::exp(r_in) / (std::exp(r_out) + std::exp(r_in)) - 1;
+      }
+    }
+
+    // M-step
+    in_mean = 0;
+    in_std = 0;
+    out_mean = 0;
+    out_std = 0;
+    float in_sum = 0.;
+    float out_sum = 0.;
+    for (int i=0; i<h; i++) {
+      for (int j=0; j<w; j++) {
+        int ij = i*w+j;
+        in_mean += dist[ij] * (1+z[i][j])/2;
+        in_std += dist[ij]*dist[ij] * (1+z[i][j])/2;
+        in_sum += (1+z[i][j])/2;
+        out_mean += dist[ij] * (1-z[i][j])/2;
+        out_std += dist[ij]*dist[ij] * (1-z[i][j])/2;
+        out_sum += (1-z[i][j])/2;
+      }
+    }
+    in_mean = in_mean/in_sum;
+    in_std = std::sqrt(in_std/in_sum - in_mean*in_mean);
+    out_mean = out_mean/out_sum;
+    out_std = std::sqrt(out_std/out_sum - out_mean*out_mean);
+  }
+
+  std::vector<int> matches(h*w);
+  for (int i=0; i<h; i++) {
+    for (int j=0; j<w; j++) {
+      int ij = i*w+j;
+      if (z[i][j] < 0) {
+        matches[ij] = -1;
+      } else {
+        matches[ij] = idx[ij];
+      }
+    }
+  }
+
+  return matches;
+}
+
+// input: reference and source point clouds, prior SE3 transform guess
+// output: SE3 transform from source to reference, total error (of some sort TODO)
+float ICP_hmrf(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
+    Eigen::Matrix<float, 4, 4> &Trs, float beta, float dt_thresh, float dth_thresh,
+    int max_iter, std::vector<bool> *matched) {
+
+  // transformations calculated at each iteration
+  Eigen::Matrix<float, 4, 4> Tmat;
+
+#ifdef PROFILE
+  std::chrono::duration<uint64_t, std::micro> kdtree_build_time(0);
+  std::chrono::duration<uint64_t, std::micro> kdtree_search_time(0);
+  std::chrono::duration<uint64_t, std::micro> match_time(0);
+  std::chrono::duration<uint64_t, std::micro> localize_time(0);
+  std::chrono::duration<uint64_t, std::micro> update_time(0);
+  auto start = std::chrono::high_resolution_clock::now();
+#endif
+  // build k-d tree
+  KdTreeFLANN<PointXYZ> kdtree;
+  kdtree.setInputCloud(reference);
+#ifdef PROFILE
+  auto stop = std::chrono::high_resolution_clock::now();
+  kdtree_build_time = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+  start = stop;
+#endif
+
+  // vectors to receive nearest neighbors
+  std::vector<std::vector<int>> nearest_i_t(source->size(), std::vector<int>(1));
+  std::vector<std::vector<float>> nearest_d_t(source->size(),
+      std::vector<float>(1));
+
+  // transform source points according to prior Trs
+  for (size_t i=0; i<source->size(); i++) {
+    source->points[i].getVector3fMap() =
+      Trs.topLeftCorner(3,3)*source->points[i].getVector3fMap() +
+      Trs.topRightCorner(3,1);
+  }
+
+  std::vector<int> matches(source->size());
+  for (int iter=0; iter < MAX_ITER; iter++) {
+
+    // find closest points
+#pragma omp parallel for
+    for (size_t i=0; i<source->size(); i++) {
+      nearest_i_t[i][0] = -1;
+      nearest_d_t[i][0] = INFINITY;
+      if (!isnan(source->points[i].x)) {
+        kdtree.nearestKSearch(source->points[i], 1, nearest_i_t[i],
+            nearest_d_t[i]);
+      }
+    }
+
+    std::vector<int> nearest_i = flatten<int>(nearest_i_t);
+    std::vector<float> nearest_d = flatten<float>(nearest_d_t);
+
+    // initialize matches
+    if (iter==0) {
+      float threshold = quickselect(nearest_d, 0.9*nearest_d.size());
+      for (size_t i=0; i<matches.size(); i++) {
+        if (nearest_d[i] > threshold) {
+          matches[i] = -1;
+        } else {
+          matches[i] = nearest_i[i];
+        }
+      }
+    }
+
+#ifdef PROFILE
+    stop = std::chrono::high_resolution_clock::now();
+    kdtree_search_time += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    start = stop;
+#endif
+
+    // choose which matches to use
+    matches = find_matches(beta, nearest_i, nearest_d, matches);
+#ifdef PROFILE
+    stop = std::chrono::high_resolution_clock::now();
+    match_time += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    start = stop;
+#endif
+
+    // compute motion
+    Tmat = localize(reference, source, matches, true);
+
+#ifdef PROFILE
+    stop = std::chrono::high_resolution_clock::now();
+    localize_time += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    start = stop;
+#endif
+    // apply to all source points
+    for (size_t i=0; i<source->points.size(); i++) {
+      source->points[i].getVector3fMap() =
+        Tmat.topLeftCorner(3,3)*source->points[i].getVector3fMap() +
+        Tmat.topRightCorner(3,1);
+    }
+
+    // update Trs
+    Trs = Tmat*Trs;
+
+    // check stopping criteria
+    float scale = Tmat.block(0, 0, 3, 1).norm();
+    float dt = Tmat.topRightCorner(3, 1).norm();
+    float dth = acos((Tmat.topLeftCorner(3, 3).trace()/scale - 1.)/2.);
+
+#ifdef PROFILE
+    std::cerr << "Iteration " << iter << " dt " << dt << ", dtheta " << dth <<
+      ", scale " << scale << std::endl;
+    stop = std::chrono::high_resolution_clock::now();
+    update_time += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    start = stop;
+#endif
+    if (iter >= max_iter || (iter > 0 && dt < dt_thresh && dth < dth_thresh)) {
+      break;
+    }
+  }
+
+  if (matched != NULL) {
+    matched->resize(matches.size());
+    for (size_t i = 0; i<matches.size(); i++) {
+      (*matched)[i] = matches[i]>=0;
+    }
+  }
+
+#ifdef PROFILE
+  std::cerr << "kdtree_build_time  " << kdtree_build_time.count() << std::endl;
+  std::cerr << "kdtree_search_time " << kdtree_search_time.count() << std::endl;
+  std::cerr << "match_time         " << match_time.count() << std::endl;
+  std::cerr << "localize_time      " << localize_time.count() << std::endl;
+  std::cerr << "update_time        " << update_time.count() << std::endl;
+#endif
+
+  return 0.;
 }
 
 // input: reference and source point clouds, prior SE3 transform guess

@@ -4,7 +4,7 @@ project(ICP)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
-add_definitions(-DPROFILE)
+#add_definitions(-DPROFILE)
 
 option(BUILD_ICP "Build the ICP library, requires other packages" ON)
 option(BUILD_ICP_TEST "Build the ICP library test suite, requires other packages" OFF)
@@ -15,6 +15,9 @@ if(BUILD_ICP_TEST)
   find_package(Pangolin REQUIRED)
   find_package(SceneGraph REQUIRED)
 endif()
+
+set(CMAKE_C_COMPILER clang-omp CACHE STRING "C compiler" FORCE)
+set(CMAKE_CXX_COMPILER clang-omp++ CACHE STRING "C++ compiler" FORCE)
 
 find_package(PCL REQUIRED)
 find_package(OpenMP REQUIRED)
