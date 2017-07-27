@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <stdlib.h>
 #include <omp.h>
+#include <fstream>
 #ifdef PROFILE
 #include <chrono>
 #include <iostream>
@@ -158,7 +159,7 @@ Eigen::Matrix4f localize(PointCloud<PointXYZ>::Ptr reference,
 }
 
 std::vector<int> find_matches(float beta, std::vector<int> idx,
-    std::vector<float> dist, std::vector<int> init) {
+    std::vector<float> dist, const std::vector<int> init) {
   const int h = 480;
   const int w = 640;
   assert(idx.size() == h*w);
@@ -288,6 +289,8 @@ std::vector<int> find_matches(float beta, std::vector<int> idx,
 float ICP_hmrf(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
     Eigen::Matrix<float, 4, 4> &Trs, float beta, float dt_thresh, float dth_thresh,
     int max_iter, std::vector<bool> *matched) {
+  const int h = 480;
+  const int w = 640;
 
   // transformations calculated at each iteration
   Eigen::Matrix<float, 4, 4> Tmat;
@@ -340,15 +343,24 @@ float ICP_hmrf(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr so
 
     // initialize matches
     if (iter==0) {
+      std::ofstream bitmap("matches_0.ppm");
+      bitmap << "P1" << std::endl;
+      bitmap << w << " " << h;
       std::vector<float> nd_t = drop_inf_nan<float>(nearest_d);
       float threshold = quickselect(nd_t, 0.9*nd_t.size());
       for (size_t i=0; i<matches.size(); i++) {
+        if (i%h == 0) {
+          bitmap << std::endl;
+        }
         if (nearest_d[i] > threshold) {
           matches[i] = -1;
+          bitmap << "0 ";
         } else {
           matches[i] = nearest_i[i];
+          bitmap << "1 ";
         }
       }
+      bitmap.close();
     }
 
 #ifdef PROFILE
@@ -359,6 +371,18 @@ float ICP_hmrf(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr so
 
     // choose which matches to use
     matches = find_matches(beta, nearest_i, nearest_d, matches);
+    char filename[100];
+    sprintf(filename, "matches_%d.ppm", iter+1);
+    std::ofstream bitmap(filename);
+    bitmap << "P1" << std::endl;
+    bitmap << w << " " << h;
+    for (size_t i=0; i<matches.size(); i++) {
+      if (i%h == 0) {
+        bitmap << std::endl;
+      }
+      bitmap << ((matches[i]<0) ? "0 " : "1 ");
+    }
+    bitmap.close();
 #ifdef PROFILE
     stop = std::chrono::high_resolution_clock::now();
     match_time += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
