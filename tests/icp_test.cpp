@@ -1,16 +1,16 @@
-#include <iostream>
+// Copyright 2017 John Stechschulte
+#include "include/icp.h"
 #include <SceneGraph/SceneGraph.h>
 #include <pangolin/pangolin.h>
 #include <pcl/compression/octree_pointcloud_compression.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
-#include "icp.h"
+#include <iostream>
 
 #define W 1024
 #define H 768
 #define COMP_N (1<<16)
 
-using namespace pcl;
 const float epsilon = 1e-4;
 
 int main(int argc, char* argv[]) {
@@ -39,8 +39,8 @@ int main(int argc, char* argv[]) {
   */
   std::vector<int> match_i = {0, 1, 2, 3, 4};
 
-  PointCloud<PointXYZ> ref_cloud;
-  PointCloud<PointXYZ> src_cloud;
+  pcl::PointCloud<pcl::PointXYZ> ref_cloud;
+  pcl::PointCloud<pcl::PointXYZ> src_cloud;
 
   ref_cloud.width = 5;
   ref_cloud.height = 1;
@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
   src_cloud.is_dense = true;
   src_cloud.points.resize(src_cloud.width*src_cloud.height);
 
-  for (size_t i=0; i<ref_cloud.points.size(); i++) {
+  for (size_t i = 0; i < ref_cloud.points.size(); i++) {
     ref_cloud.points[i].x = ref_pts[i][0];
     ref_cloud.points[i].y = ref_pts[i][1];
     ref_cloud.points[i].z = ref_pts[i][2];
@@ -64,13 +64,13 @@ int main(int argc, char* argv[]) {
   Eigen::Matrix<float, 4, 4> m = localize(ref_cloud.makeShared(), src_cloud.makeShared(),
       match_i, true);
 
-  bool passed=true;
-  for (size_t i=0; i<src_cloud.points.size(); i++) {
+  bool passed = true;
+  for (size_t i = 0; i < src_cloud.points.size(); i++) {
     passed = passed && ((ref_cloud.points[i].getVector4fMap() -
           m*src_cloud.points[i].getVector4fMap()).norm() < epsilon);
     passed = passed && ((ref_cloud.points[i].getVector3fMap() -
-          (m.topLeftCorner(3,3)*src_cloud.points[i].getVector3fMap() +
-           m.topRightCorner(3,1))).norm() < epsilon);
+          (m.topLeftCorner(3, 3)*src_cloud.points[i].getVector3fMap() +
+           m.topRightCorner(3, 1))).norm() < epsilon);
   }
   if (!passed) {
     std::cout << ":-( localize failed" << std::endl;
@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr out_comp_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
 
   in_comp_cloud->points.resize(COMP_N);
-  for (size_t i=0; i<COMP_N; i++) {
+  for (size_t i = 0; i < COMP_N; i++) {
     in_comp_cloud->points[i].x = rand() / (RAND_MAX + 1.0f);
     in_comp_cloud->points[i].y = rand() / (RAND_MAX + 1.0f);
     in_comp_cloud->points[i].z = rand() / (RAND_MAX + 1.0f);
@@ -135,8 +135,8 @@ int main(int argc, char* argv[]) {
   Eigen::Matrix<float, 4, 4> Trs = Eigen::Matrix<float, 4, 4>::Identity();
 
   std::vector<bool> matched;
-  //ICP_zhang(real_ref_cloud->makeShared(), real_src_cloud->makeShared(), Trs,
-      //0.001, 0.0001, 0.001, 50, &matched);
+  // ICP_zhang(real_ref_cloud->makeShared(), real_src_cloud->makeShared(), Trs,
+      // 0.001, 0.0001, 0.001, 50, &matched);
   ICP_hmrf(real_ref_cloud->makeShared(), real_src_cloud->makeShared(), Trs,
       2.0, 0.0001, 0.001, 50, &matched);
   std::cout << Trs << std::endl;
@@ -147,10 +147,10 @@ int main(int argc, char* argv[]) {
   transformed_src.is_dense = false;
   transformed_src.resize(src_n);
 
-  for (int i=0; i<src_n; i++) {
+  for (int i = 0; i < src_n; i++) {
     transformed_src.points[i].getVector3fMap() =
-      Trs.topLeftCorner(3,3) * real_src_cloud->points[i].getVector3fMap() +
-      Trs.topRightCorner(3,1);
+      Trs.topLeftCorner(3, 3) * real_src_cloud->points[i].getVector3fMap() +
+      Trs.topRightCorner(3, 1);
   }
 
   // start pangolin
@@ -194,7 +194,7 @@ int main(int argc, char* argv[]) {
 
   while (!pangolin::ShouldQuit()) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glColor4f(1.0f,1.0f,1.0f,1.0f);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
     if (draw) {
       glPCref.Clear();
@@ -213,7 +213,7 @@ int main(int argc, char* argv[]) {
               real_src_cloud->points[i].y,
               real_src_cloud->points[i].z));
       }
-      for (int i = 0; i < src_n; i++){
+      for (int i = 0; i < src_n; i++) {
         if (matched[i]) {
           glPCsrc.AddVertex(Eigen::Vector3d(
                 transformed_src.points[i].x,

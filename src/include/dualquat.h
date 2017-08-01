@@ -1,13 +1,14 @@
-#ifndef DUALQUAT_H
-#define DUALQUAT_H
-#include <iostream>
+// Copyright 2017 John Stechschulte
+#ifndef SRC_INCLUDE_DUALQUAT_H_
+#define SRC_INCLUDE_DUALQUAT_H_
 #include <Eigen/Dense>
 #include <pcl/point_types.h>
+#include <iostream>
 #include <cmath>
 
 template <typename T>
 class Quat {
-  public:
+ public:
     union {
       T vector[4];
       struct {
@@ -15,14 +16,14 @@ class Quat {
       };
     };
 
-    Quat() : x((T) 0.), y((T) 0.), z((T) 0.), w((T) 0.) {};
+    Quat() : x((T) 0.), y((T) 0.), z((T) 0.), w((T) 0.) {}
     Quat(T w, T x, T y, T z) :
       x(x), y(y), z(z), w(w) {}
-    Quat(T vector[4]) :
+    explicit Quat(T vector[4]) :
       x(vector[0]), y(vector[1]), z(vector[2]), w(vector[3]) {}
-    Quat(pcl::PointXYZ p);
+    explicit Quat(pcl::PointXYZ p);
     Quat(Eigen::Vector3d vector, T rotation_radians);
-    Quat(Eigen::Matrix<T, 4, 1> vector);
+    explicit Quat(Eigen::Matrix<T, 4, 1> vector);
     static Quat fromRotationMatrix(Eigen::Matrix<T, 3, 3> m);
 
     Quat conjugate() const;
@@ -123,13 +124,13 @@ inline Quat<T> operator*(T const& scalar, Quat<T> rhs) {
 
 template <typename T>
 class DualQuat {
-  public:
+ public:
     Quat<T> r;
     Quat<T> d;
 
     DualQuat() : r(Quat<T>()), d(Quat<T>()) {}
     DualQuat(Quat<T> r, Quat<T> d) : r(r), d(d) {}
-    DualQuat(pcl::PointXYZ point);
+    explicit DualQuat(pcl::PointXYZ point);
 
     DualQuat conjugate() const;
     T realMagnitude() const;
@@ -205,4 +206,4 @@ inline DualQuat<T> operator*(T const& scalar, DualQuat<T> rhs) {
   return rhs *= scalar;
 }
 
-#endif // DUALQUAT_H
+#endif  // SRC_INCLUDE_DUALQUAT_H_

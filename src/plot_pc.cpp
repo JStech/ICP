@@ -1,14 +1,14 @@
+// Copyright 2017 John Stechschulte
 #include <SceneGraph/SceneGraph.h>
 #include <pangolin/pangolin.h>
-#include <iostream>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
+#include <iostream>
 
 #define W 1024
 #define H 768
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   if (argc < 2) {
     std::cout << "Usage: " << argv[0] << " <point_cloud_file>" << std::endl;
     exit(1);
@@ -57,11 +57,11 @@ int main(int argc, char *argv[])
 
   while (!pangolin::ShouldQuit()) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glColor4f(1.0f,1.0f,1.0f,1.0f);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
     if (step && cloud_n < cloud->height) {
       glPC.Clear();
-      for (uint32_t i = cloud_n*cloud->width; i<(cloud_n+1)*cloud->width; i++){
+      for (uint32_t i = cloud_n*cloud->width; i < (cloud_n+1)*cloud->width; i++) {
         glPC.AddVertex(Eigen::Vector3d(cloud->points[i].x, cloud->points[i].y,
               cloud->points[i].z));
       }

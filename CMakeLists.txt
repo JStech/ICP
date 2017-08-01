@@ -38,7 +38,7 @@ if (BUILD_ICP)
 endif()
 
 include_directories( ${PCL_INCLUDE_DIRS} )
-include_directories( "include"
+include_directories( "src"
   ${CMAKE_BINARY_DIR}
   ${CMAKE_SOURCE_DIR}
   )

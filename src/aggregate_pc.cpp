@@ -1,7 +1,8 @@
-#include <iostream>
+// Copyright 2017 John Stechschulte
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 #include <pcl/filters/statistical_outlier_removal.h>
+#include <iostream>
 #include <vector>
 
 #define W 1024
@@ -16,8 +17,7 @@ void filter_pointcloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud) {
   return;
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   if (argc < 2) {
     std::cout << "Usage: " << argv[0] << " [-f] <output_cloud_file> <point_cloud_files>" << std::endl;
     exit(1);
@@ -29,14 +29,14 @@ int main(int argc, char *argv[])
   }
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
-  for (int i=2+filter; i<argc; i++) {
+  for (int i=2+filter; i < argc; i++) {
     // open point cloud file
     pcl::PointCloud<pcl::PointXYZ>::Ptr in_cloud(new pcl::PointCloud<pcl::PointXYZ>);
     if (pcl::io::loadPCDFile<pcl::PointXYZ>(argv[i], *in_cloud) == -1) {
       std::cerr << "Error reading file " << argv[i] << std::endl;
       exit(1);
     }
-    std::cerr << "Read " << argv[i] << " containing " << in_cloud->height << 
+    std::cerr << "Read " << argv[i] << " containing " << in_cloud->height <<
       " clouds of " << in_cloud->width << " points." << std::endl;
     *cloud += *in_cloud;
   }

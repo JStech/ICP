@@ -1,4 +1,5 @@
-#include "dualquat.h"
+// Copyright 2017 John Stechschulte
+#include "include/dualquat.h"
 #include <iostream>
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -106,8 +107,8 @@ int main(int argc, char* argv[]) {
     << std::endl;
 
   R = A+B;
-  if (R==C) std::cout << ":-D addition test passed" << std::endl;
-  if (R!=C) std::cout << ":-( addition test failed" << std::endl;
+  if (R == C) std::cout << ":-D addition test passed" << std::endl;
+  if (R != C) std::cout << ":-( addition test failed" << std::endl;
   if (A != orig_A) std::cout << ":-( addition changed lhs" << std::endl;
 
   E.r.w = -8.; E.r.x = -7.; E.r.y = -6.; E.r.z = -5.;

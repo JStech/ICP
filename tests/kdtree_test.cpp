@@ -1,12 +1,12 @@
-#include "kdtree.h"
-#include <iostream>
-#include <iomanip>
+// Copyright 2017 John Stechschulte
+#include "include/kdtree.h"
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <pcl/kdtree/kdtree_flann.h>
-#include <cstdlib>
 #include <time.h>
-#include <chrono>
+#include <cstdlib>
+#include <iostream>
+#include <iomanip>
 
 #define FW 11
 
@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
 
   int num_points = 100;
   cloud.resize(num_points);
-  for (int i=0; i<num_points; i++) {
+  for (int i = 0; i < num_points; i++) {
     cloud.points[i].x = (100. * rand())/RAND_MAX;
     cloud.points[i].y = (100. * rand())/RAND_MAX;
     cloud.points[i].z = (100. * rand())/RAND_MAX;
@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
   kdtree.setInputCloud(cloud.makeShared());
   kdtree.nearestKSearch(test_point, 1, nearest_i, nearest_d);
 
-  for (int i=0; i<num_points; i++) {
+  for (int i = 0; i < num_points; i++) {
     if (sqrt(dist2(test_point, cloud.points[i])) < nearest_d[0] &&
         i != nearest_i[0] ) {
       std::cout << "Nearest neighbor search failed" << std::endl;
@@ -137,9 +137,9 @@ int main(int argc, char* argv[]) {
       " " << std::setw(FW) << "ext" <<
       std::endl;
 
-  for (int lg_points=4; lg_points<25; lg_points++) {
-    cloud.resize(1<<lg_points);
-    for (int i=0; i<(1<<lg_points); i++) {
+  for (int lg_points = 4; lg_points < 25; lg_points++) {
+    cloud.resize(1 << lg_points);
+    for (int i = 0; i < (1 << lg_points); i++) {
       cloud.points[i].x = (100.*rand())/RAND_MAX;
       cloud.points[i].y = (100.*rand())/RAND_MAX;
       cloud.points[i].z = (100.*rand())/RAND_MAX;
@@ -156,7 +156,7 @@ int main(int argc, char* argv[]) {
       kdtree_size = get_mem_usage();
 
       start = std::chrono::high_resolution_clock::now();
-      for (int i=0; i<num_searches; i++) {
+      for (int i = 0; i < num_searches; i++) {
         search_point.x = (100.*rand())/RAND_MAX;
         search_point.y = (100.*rand())/RAND_MAX;
         search_point.z = (100.*rand())/RAND_MAX;
@@ -178,7 +178,7 @@ int main(int argc, char* argv[]) {
       kdtree_ext_size = get_mem_usage();
 
       start = std::chrono::high_resolution_clock::now();
-      for (int i=0; i<1000; i++) {
+      for (int i = 0; i < 1000; i++) {
         search_point.x = (100.*rand())/RAND_MAX;
         search_point.y = (100.*rand())/RAND_MAX;
         search_point.z = (100.*rand())/RAND_MAX;
@@ -190,7 +190,7 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << std::setw(FW) << lg_points <<
-      " " << std::setw(FW) << ((int64_t)lg_points)*(1<<lg_points) <<
+      " " << std::setw(FW) << ((int64_t)lg_points)*(1 << lg_points) <<
       " " << std::setw(FW) << kdtree_build_time.count() <<
       " " << std::setw(FW) << kdtree_ext_build_time.count() <<
       " " << std::setw(FW) << kdtree_search_time.count()/num_searches <<
@@ -199,5 +199,4 @@ int main(int argc, char* argv[]) {
       " " << std::setw(FW) << kdtree_ext_size <<
       std::endl;
   }
-
 }

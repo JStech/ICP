@@ -1,6 +1,7 @@
-#include "dualquat.h"
-#include <cmath>
+// Copyright 2017 John Stechschulte
+#include "include/dualquat.h"
 #include <Eigen/Dense>
+#include <cmath>
 
 template <typename T>
 Quat<T>::Quat(pcl::PointXYZ p) {

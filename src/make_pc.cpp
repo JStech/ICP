@@ -1,15 +1,15 @@
+// Copyright 2017 John Stechschulte
 #include <HAL/Camera/CameraDevice.h>
 #include <SceneGraph/SceneGraph.h>
 #include <calibu/Calibu.h>
-#include <cmath>
-#include <iomanip>
-#include <iostream>
 #include <pangolin/pangolin.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
+#include <cmath>
+#include <iomanip>
+#include <iostream>
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   // check arguments
   if (argc != 3) {
     std::cout << "Usage: " << argv[0] << " /path/to/cameras.xml 'scheme:///path/to/stereo/data'" << std::endl;
@@ -29,8 +29,8 @@ int main(int argc, char *argv[])
     std::cerr << "Expecting video channel and depth channel." << std::endl;
     return 1;
   }
-  const unsigned w = camera.Width();
-  const unsigned h = camera.Height();
+  const uint32_t w = camera.Width();
+  const uint32_t h = camera.Height();
 
   // start Pangolin, create displays
   pangolin::CreateWindowAndBind("Main", 2*w, h);
@@ -58,18 +58,18 @@ int main(int argc, char *argv[])
   cloud.is_dense = false;
 
   // main loop
-  for (unsigned frame_number = 0; !pangolin::ShouldQuit(); frame_number++) {
+  for (uint32_t frame_number = 0; !pangolin::ShouldQuit(); frame_number++) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (camera.Capture(*imgs)) {
-      const unsigned char* v_img = (*imgs)[0]->data();
-      const unsigned short* d_img = (unsigned short*) (*imgs)[1]->data();
+      const uint8_t* v_img = (*imgs)[0]->data();
+      const uint16_t* d_img = reinterpret_cast<const uint16_t*>((*imgs)[1]->data());
 
       video_view.SetImage(v_img, w, h);
       depth_view.SetImage(d_img, w, h, GL_LUMINANCE, GL_LUMINANCE, GL_UNSIGNED_SHORT);
 
       cloud.points.resize(cloud.width*(cloud.height+1));
-      for (unsigned i=0; i<h*w; i++) {
+      for (uint32_t i=0; i < h*w; i++) {
         if (d_img[i] == 0) {
           cloud.points[i+cloud.height*h*w].x =
             cloud.points[i+cloud.height*h*w].y =
@@ -78,8 +78,8 @@ int main(int argc, char *argv[])
           continue;
         }
         // unproject depth
-        pixel(0) = (float) (i%w);
-        pixel(1) = (float) (i/w);
+        pixel(0) = static_cast<float>(i%w);
+        pixel(1) = static_cast<float>(i/w);
         float depth = d_img[i] / 10000.0;
         depth *= std::sqrt(focal_length*focal_length +
             (pixel(0) - u0)*(pixel(0) - u0) +

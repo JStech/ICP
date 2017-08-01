@@ -1,11 +1,11 @@
+// Copyright 2017 John Stechschulte
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
 #include <iostream>
 #include <vector>
 #include <numeric>
-#include <pcl/io/pcd_io.h>
-#include <pcl/point_types.h>
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   if (argc < 3) {
     std::cout << "Usage: " << argv[0] << " <point_cloud_file> <frame> [frame ... ]" <<
       std::endl;
@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
   basename.erase(basename.find_last_of('.'), std::string::npos);
   std::ostringstream filename;
 
-  for (uint32_t i=2; i<argc; i++) {
+  for (uint32_t i=2; i < argc; i++) {
     int fn = atoi(argv[i]);
     std::iota(indices.begin(), indices.end(), fn*cloud->width);
     subcloud->clear();

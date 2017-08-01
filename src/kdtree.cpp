@@ -1,6 +1,7 @@
-#include "kdtree.h"
-#include <cstdlib>
+// Copyright 2017 John Stechschulte
+#include "include/kdtree.h"
 #include <math.h>
+#include <cstdlib>
 
 /////// recursive tree-building function
 // considers the subarray of points between start (included) and end (excluded)
@@ -28,7 +29,7 @@ void KDTree::build_tree(point_vector& points, std::vector<int>& indices,
 void KDTree::setInputCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud) {
   std::vector<int> indices;
   indices.resize(cloud->points.size());
-  for (int i=0; i<(int) cloud->points.size(); i++) {
+  for (int i=0; i < static_cast<int>(cloud->points.size()); i++) {
     indices[i] = i;
   }
   this->build_tree(cloud->points, indices, 0, cloud->points.size(), 0);
@@ -40,9 +41,10 @@ void KDTree::setInputCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud) {
 // to be less than/greater than position k
 float KDTree::select(point_vector& points, std::vector<int>& indices, int dim,
     size_t start, size_t end, size_t k) {
-  if (start+1==end) {
-    if (start==k) return points[indices[start]].data[dim];
-    else {
+  if (start+1 == end) {
+    if (start == k) {
+      return points[indices[start]].data[dim];
+    } else {
       // this shouldn't happen
       exit(255);
     }
@@ -73,9 +75,9 @@ float KDTree::select(point_vector& points, std::vector<int>& indices, int dim,
   indices[i] = indices[start];
   indices[start] = t;
 
-  if (i==k) {
+  if (i == k) {
     return points[indices[i]].data[dim];
-  } else if (i<k) {
+  } else if (i < k) {
     return KDTree::select(points, indices, dim, i+1, end, k);
   } else {
     return KDTree::select(points, indices, dim, start, i, k);
@@ -144,7 +146,7 @@ void KDTree::nearestKSearch(pcl::PointXYZ point, int k, std::vector<int>& neares
         std::vector<float>& nearest_d) {
   // just implementing 1-nearest neighbor, but keeping the argument to match
   // PCL's KDTree interface
-  if (k!=1) return;
+  if (k != 1) return;
 
   nearest_i.resize(1);
   nearest_d.resize(1);

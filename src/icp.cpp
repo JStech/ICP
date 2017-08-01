@@ -1,22 +1,20 @@
+// Copyright 2017 John Stechschulte
+#include "include/icp.h"
 #include <pcl/compression/octree_pointcloud_compression.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
-#include <cmath>
-#include <Eigen/Eigenvalues>
-#include "icp.h"
-#include <algorithm>
 #include <stdlib.h>
 #include <omp.h>
+#include <Eigen/Eigenvalues>
+#include <cmath>
+#include <algorithm>
 #include <fstream>
 #ifdef PROFILE
-#include <chrono>
 #include <iostream>
 #include <cassert>
 #endif
 #define MAX_ITER 40
-
-using namespace pcl;
 
 template<typename T>
 std::vector<T> drop_inf_nan(const std::vector<T> &orig) {
@@ -40,12 +38,12 @@ std::vector<T> flatten(const std::vector<std::vector<T>> &orig) {
 // return value at position k in list L
 float quickselect(std::vector<float> L, size_t k) {
   size_t n = L.size();
-  assert(0<=k);
-  assert(k<n);
+  assert(0 <= k);
+  assert(k < n);
   std::vector<float> lt_items;
   std::vector<float> gt_items;
   float pivot = L[rand()%n];
-  for (size_t i=0; i<n; i++) {
+  for (size_t i=0; i < n; i++) {
     if (L[i] < pivot) {
       lt_items.push_back(L[i]);
     } else if (L[i] > pivot) {
@@ -67,7 +65,7 @@ float choose_xi(std::vector<std::vector<float>> nearest_d,
 
   // get estimate of max distance
   float max = 0.f;
-  for (int n = 0; n<100; n++) {
+  for (int n = 0; n < 100; n++) {
     int r = rand()%match_i.size();
     if (nearest_d[r][0] > max) {
       max = nearest_d[r][0];
@@ -77,18 +75,18 @@ float choose_xi(std::vector<std::vector<float>> nearest_d,
 
   // build histogram
   std::vector<unsigned int> counts(num_bins+1, 0);
-  for (size_t i=0; i<match_i.size(); i++) {
+  for (size_t i=0; i < match_i.size(); i++) {
     if (nearest_d[i][0] > max) {
       counts[num_bins]++;
     } else {
-      counts[(int)(num_bins*nearest_d[i][0]/max)]++;
+      counts[static_cast<int>(num_bins*nearest_d[i][0]/max)]++;
     }
   }
 
   // find biggest peak
   unsigned peak = 0;
   unsigned elevation = 0;
-  for (size_t i=0; i<num_bins+1; i++) {
+  for (size_t i=0; i < num_bins+1; i++) {
     if (counts[i] > elevation) {
       peak = i;
       elevation = counts[i];
@@ -97,24 +95,24 @@ float choose_xi(std::vector<std::vector<float>> nearest_d,
 
   // find first valley after peak (lower than 60% of peak height)
   unsigned valley;
-  for (valley=peak+1; valley<num_bins; valley++) {
+  for (valley=peak+1; valley < num_bins; valley++) {
     if (counts[valley] > elevation*0.6) continue;
     if (counts[valley+1] > counts[valley]) break;
   }
 
-  return ((float) valley)/((float) num_bins) * max;
+  return (static_cast<float>(valley)/static_cast<float>(num_bins)) * max;
 }
 
-Eigen::Matrix4f localize(PointCloud<PointXYZ>::Ptr reference,
-    PointCloud<PointXYZ>::Ptr source, std::vector<int> match_i,
+Eigen::Matrix4f localize(pcl::PointCloud<pcl::PointXYZ>::Ptr reference,
+    pcl::PointCloud<pcl::PointXYZ>::Ptr source, std::vector<int> match_i,
     bool do_scale) {
 
   // find centroids
   Eigen::Vector3f src_centroid = Eigen::Vector3f::Zero();
   Eigen::Vector3f ref_centroid = Eigen::Vector3f::Zero();
   int c = 0;
-  for (size_t i=0; i<match_i.size(); i++) {
-    if (match_i[i]==-1) continue;
+  for (size_t i=0; i < match_i.size(); i++) {
+    if (match_i[i] == -1) continue;
     src_centroid += source->points[i].getVector3fMap();
     ref_centroid += reference->points[match_i[i]].getVector3fMap();
     c++;
@@ -126,8 +124,8 @@ Eigen::Matrix4f localize(PointCloud<PointXYZ>::Ptr reference,
   if (do_scale) {
     // estimate scale transform
     // scale variable is source/reference
-    for (size_t i=0; i<match_i.size(); i++) {
-      if (match_i[i]==-1) continue;
+    for (size_t i=0; i < match_i.size(); i++) {
+      if (match_i[i] == -1) continue;
       scale += (source->points[i].getVector3fMap() - src_centroid).norm() /
         (reference->points[match_i[i]].getVector3fMap() - ref_centroid).norm();
     }
@@ -139,8 +137,8 @@ Eigen::Matrix4f localize(PointCloud<PointXYZ>::Ptr reference,
   // perform SVD to recover rotation matrix
   // calculate cross correlation
   Eigen::Matrix3f M = Eigen::Matrix3f::Zero();
-  for (size_t i=0; i<match_i.size(); i++) {
-    if (match_i[i]==-1) continue;
+  for (size_t i=0; i < match_i.size(); i++) {
+    if (match_i[i] == -1) continue;
     pcl::PointXYZ &s_pt = source->points[i];
     pcl::PointXYZ &r_pt = reference->points[match_i[i]];
     M += (s_pt.getVector3fMap() - src_centroid)/scale * (r_pt.getVector3fMap()
@@ -175,7 +173,7 @@ std::vector<int> find_matches(float beta, std::vector<int> idx,
   double min_d = HUGE_VAL;
   double max_d = 0;
 
-  for (size_t i=0; i<idx.size(); i++) {
+  for (size_t i=0; i < idx.size(); i++) {
     if (std::isnan(dist[i]) || std::isinf(dist[i])) {
       continue;
     }
@@ -186,7 +184,7 @@ std::vector<int> find_matches(float beta, std::vector<int> idx,
       min_d = dist[i];
     }
 
-    if (init[i]>=0) {
+    if (init[i] >= 0) {
       in_mean += dist[i];
       in_std += dist[i]*dist[i];
       in_n++;
@@ -222,15 +220,15 @@ std::vector<int> find_matches(float beta, std::vector<int> idx,
   std::vector< std::vector<float> > z(h, std::vector<float>(w));
 
   // E-step
-  for (int iters=0; iters<max_iters; iters++) {
-    for (int i=0; i<h; i++) {
-      for (int j=0; j<w; j++) {
+  for (int iters=0; iters < max_iters; iters++) {
+    for (int i=0; i < h; i++) {
+      for (int j=0; j < w; j++) {
         int ij = i*w+j;
         float mean_field = 0.;
-        if (i>0) mean_field += z[i-1][j];
-        if (i<h-1) mean_field += z[i+1][j];
-        if (j>0) mean_field += z[i][j-1];
-        if (j<w-1) mean_field += z[i][j+1];
+        if (i > 0) mean_field += z[i-1][j];
+        if (i < h-1) mean_field += z[i+1][j];
+        if (j > 0) mean_field += z[i][j-1];
+        if (j < w-1) mean_field += z[i][j+1];
         mean_field/=4;
         float r_in = beta*mean_field - std::log(in_std);
         float r_out = beta*mean_field - std::log(out_std);
@@ -249,8 +247,8 @@ std::vector<int> find_matches(float beta, std::vector<int> idx,
     out_std = 0;
     float in_sum = 0.;
     float out_sum = 0.;
-    for (int i=0; i<h; i++) {
-      for (int j=0; j<w; j++) {
+    for (int i=0; i < h; i++) {
+      for (int j=0; j < w; j++) {
         int ij = i*w+j;
         if (std::isnan(dist[ij]) || std::isinf(dist[ij])) {
           continue;
@@ -270,8 +268,8 @@ std::vector<int> find_matches(float beta, std::vector<int> idx,
   }
 
   std::vector<int> matches(h*w);
-  for (int i=0; i<h; i++) {
-    for (int j=0; j<w; j++) {
+  for (int i=0; i < h; i++) {
+    for (int j=0; j < w; j++) {
       int ij = i*w+j;
       if (z[i][j] < 0) {
         matches[ij] = -1;
@@ -286,7 +284,7 @@ std::vector<int> find_matches(float beta, std::vector<int> idx,
 
 // input: reference and source point clouds, prior SE3 transform guess
 // output: SE3 transform from source to reference, total error (of some sort TODO)
-float ICP_hmrf(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
+float ICP_hmrf(pcl::PointCloud<pcl::PointXYZ>::Ptr reference, pcl::PointCloud<pcl::PointXYZ>::Ptr source,
     Eigen::Matrix<float, 4, 4> &Trs, float beta, float dt_thresh, float dth_thresh,
     int max_iter, std::vector<bool> *matched) {
   const int h = 480;
@@ -304,7 +302,7 @@ float ICP_hmrf(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr so
   auto start = std::chrono::high_resolution_clock::now();
 #endif
   // build k-d tree
-  KdTreeFLANN<PointXYZ> kdtree;
+  pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
   kdtree.setInputCloud(reference);
 #ifdef PROFILE
   auto stop = std::chrono::high_resolution_clock::now();
@@ -318,10 +316,10 @@ float ICP_hmrf(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr so
       std::vector<float>(1));
 
   // transform source points according to prior Trs
-  for (size_t i=0; i<source->size(); i++) {
+  for (size_t i=0; i < source->size(); i++) {
     source->points[i].getVector3fMap() =
-      Trs.topLeftCorner(3,3)*source->points[i].getVector3fMap() +
-      Trs.topRightCorner(3,1);
+      Trs.topLeftCorner(3, 3)*source->points[i].getVector3fMap() +
+      Trs.topRightCorner(3, 1);
   }
 
   std::vector<int> matches(source->size());
@@ -329,7 +327,7 @@ float ICP_hmrf(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr so
 
     // find closest points
 #pragma omp parallel for
-    for (size_t i=0; i<source->size(); i++) {
+    for (size_t i=0; i < source->size(); i++) {
       nearest_i_t[i][0] = -1;
       nearest_d_t[i][0] = INFINITY;
       if (!isnan(source->points[i].x)) {
@@ -342,13 +340,13 @@ float ICP_hmrf(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr so
     std::vector<float> nearest_d = flatten<float>(nearest_d_t);
 
     // initialize matches
-    if (iter==0) {
+    if (iter == 0) {
       std::ofstream bitmap("matches_0.ppm");
       bitmap << "P1" << std::endl;
       bitmap << w << " " << h;
       std::vector<float> nd_t = drop_inf_nan<float>(nearest_d);
       float threshold = quickselect(nd_t, 0.9*nd_t.size());
-      for (size_t i=0; i<matches.size(); i++) {
+      for (size_t i=0; i < matches.size(); i++) {
         if (i%h == 0) {
           bitmap << std::endl;
         }
@@ -372,15 +370,15 @@ float ICP_hmrf(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr so
     // choose which matches to use
     matches = find_matches(beta, nearest_i, nearest_d, matches);
     char filename[100];
-    sprintf(filename, "matches_%d.ppm", iter+1);
+    snprintf(filename, sizeof(filename), "matches_%d.ppm", iter+1);
     std::ofstream bitmap(filename);
     bitmap << "P1" << std::endl;
     bitmap << w << " " << h;
-    for (size_t i=0; i<matches.size(); i++) {
+    for (size_t i=0; i < matches.size(); i++) {
       if (i%h == 0) {
         bitmap << std::endl;
       }
-      bitmap << ((matches[i]<0) ? "0 " : "1 ");
+      bitmap << ((matches[i] < 0) ? "0 " : "1 ");
     }
     bitmap.close();
 #ifdef PROFILE
@@ -398,10 +396,10 @@ float ICP_hmrf(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr so
     start = stop;
 #endif
     // apply to all source points
-    for (size_t i=0; i<source->points.size(); i++) {
+    for (size_t i=0; i < source->points.size(); i++) {
       source->points[i].getVector3fMap() =
-        Tmat.topLeftCorner(3,3)*source->points[i].getVector3fMap() +
-        Tmat.topRightCorner(3,1);
+        Tmat.topLeftCorner(3, 3)*source->points[i].getVector3fMap() +
+        Tmat.topRightCorner(3, 1);
     }
 
     // update Trs
@@ -426,8 +424,8 @@ float ICP_hmrf(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr so
 
   if (matched != NULL) {
     matched->resize(matches.size());
-    for (size_t i = 0; i<matches.size(); i++) {
-      (*matched)[i] = matches[i]>=0;
+    for (size_t i = 0; i < matches.size(); i++) {
+      (*matched)[i] = (matches[i] >= 0);
     }
   }
 
@@ -444,7 +442,7 @@ float ICP_hmrf(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr so
 
 // input: reference and source point clouds, prior SE3 transform guess
 // output: SE3 transform from source to reference, total error (of some sort TODO)
-float ICP_zhang(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr source,
+float ICP_zhang(pcl::PointCloud<pcl::PointXYZ>::Ptr reference, pcl::PointCloud<pcl::PointXYZ>::Ptr source,
     Eigen::Matrix<float, 4, 4> &Trs, float D, float dt_thresh, float dth_thresh,
     int max_iter, std::vector<bool> *matched) {
 
@@ -463,7 +461,7 @@ float ICP_zhang(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr s
   auto start = std::chrono::high_resolution_clock::now();
 #endif
   // build k-d tree
-  KdTreeFLANN<PointXYZ> kdtree;
+  pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
   kdtree.setInputCloud(reference);
 #ifdef PROFILE
   auto stop = std::chrono::high_resolution_clock::now();
@@ -479,17 +477,17 @@ float ICP_zhang(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr s
   std::vector<int> match_i(source->size());
 
   // transform source points according to prior Trs
-  for (size_t i=0; i<source->size(); i++) {
+  for (size_t i=0; i < source->size(); i++) {
     source->points[i].getVector3fMap() =
-      Trs.topLeftCorner(3,3)*source->points[i].getVector3fMap() +
-      Trs.topRightCorner(3,1);
+      Trs.topLeftCorner(3, 3)*source->points[i].getVector3fMap() +
+      Trs.topRightCorner(3, 1);
   }
 
   for (int iter=0; iter < MAX_ITER; iter++) {
 
     // find closest points
 #pragma omp parallel for
-    for (size_t i=0; i<source->size(); i++) {
+    for (size_t i=0; i < source->size(); i++) {
       nearest_i[i][0] = -1;
       nearest_d[i][0] = INFINITY;
       if (!isnan(source->points[i].x)) {
@@ -504,11 +502,11 @@ float ICP_zhang(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr s
 #endif
 
     // choose which matches to use
-    float mu=0.;
-    float sigma=0.;
-    int n=0;
+    float mu = 0.;
+    float sigma = 0.;
+    int n = 0;
 
-    for (size_t i=0; i<source->size(); i++) {
+    for (size_t i = 0; i < source->size(); i++) {
       if (nearest_d[i][0] < Dmax) {
         match_i[i] = nearest_i[i][0];
         mu += nearest_d[i][0];
@@ -537,7 +535,7 @@ float ICP_zhang(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr s
     int matched_n = 0;
     int tot_n = 0;
 #endif
-    for (size_t i=0; i<source->size(); i++) {
+    for (size_t i = 0; i < source->size(); i++) {
       if (nearest_d[i][0] < Dmax) {
         match_i[i] = nearest_i[i][0];
 #ifdef PROFILE
@@ -566,10 +564,10 @@ float ICP_zhang(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr s
     start = stop;
 #endif
     // apply to all source points
-    for (size_t i=0; i<source->points.size(); i++) {
+    for (size_t i=0; i < source->points.size(); i++) {
       source->points[i].getVector3fMap() =
-        Tmat.topLeftCorner(3,3)*source->points[i].getVector3fMap() +
-        Tmat.topRightCorner(3,1);
+        Tmat.topLeftCorner(3, 3)*source->points[i].getVector3fMap() +
+        Tmat.topRightCorner(3, 1);
     }
 
     // update Trs
@@ -594,8 +592,8 @@ float ICP_zhang(PointCloud<PointXYZ>::Ptr reference, PointCloud<PointXYZ>::Ptr s
 
   if (matched != NULL) {
     matched->resize(match_i.size());
-    for (size_t i = 0; i<match_i.size(); i++) {
-      (*matched)[i] = match_i[i]>0;
+    for (size_t i = 0; i < match_i.size(); i++) {
+      (*matched)[i] = (match_i[i] > 0);
     }
   }
 
