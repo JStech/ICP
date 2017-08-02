@@ -5,6 +5,53 @@
 #include <pcl/point_types.h>
 #include <vector>
 
+namespace ICP {
+
+enum class Mode {
+  zhang,
+  hmrf
+};
+
+class ICP {
+  // clouds to align
+  pcl::PointCloud<pcl::PointXYZ> reference_;
+  pcl::PointCloud<pcl::PointXYZ> source_;
+
+  // transformation
+  Eigen::Matrix<float, 4, 4> Trs_;
+
+  // stopping criteria
+  float dt_thresh_;
+  float dtheta_thresh_;
+  float dscale_thresh_;
+  int max_iter_;
+
+  // parameters
+  Mode mode_;
+  float beta_;
+  float D_;
+
+ public:
+  ICP() {}
+  ICP(pcl::PointCloud<pcl::PointXYZ>, pcl::PointCloud<pcl::PointXYZ>);
+  ICP(pcl::PointCloud<pcl::PointXYZ>, pcl::PointCloud<pcl::PointXYZ>, Mode);
+
+  void SetReferenceCloud(pcl::PointCloud<pcl::PointXYZ>);
+  void SetSourceCloud(pcl::PointCloud<pcl::PointXYZ>);
+  void SetTransform(Eigen::Matrix<float, 4, 4>);
+  void SetTranslationThresh(float dt_thresh);
+  void SetRotationThresh(float dth_thresh);
+  void SetScaleThresh(float dscale_thresh);
+  void SetMaxIter(int max_iter);
+  void SetStoppingCriteria(float dt_thresh, float dth_thresh,
+      float dscale_thresh, int max_iter);
+  void SetMode(Mode);
+  void SetBeta(float);
+  void SetD(float);
+
+  void Run();
+}
+
 float ICP_hmrf(pcl::PointCloud<pcl::PointXYZ>::Ptr reference,
     pcl::PointCloud<pcl::PointXYZ>::Ptr source,
     Eigen::Matrix<float, 4, 4> &Trs, float beta, float dt_thresh,
@@ -23,4 +70,5 @@ void downsample_cloud(float d,
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr in_cloud,
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr out_cloud);
 
+}  // namespace ICP
 #endif  // SRC_INCLUDE_ICP_H_
