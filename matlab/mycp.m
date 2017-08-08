@@ -3,7 +3,7 @@ function [tf, iter, matched] = mycp(ref, src, params)
   w = 640;
   h = 480;
   beta = 4.0;
-  gamma = 0.0;
+  gamma = 2.0;
   icp;
 
   dt_thresh = 0.01;
@@ -76,6 +76,7 @@ function [matches] = find_matches(ref, src, idx, dist, init)
     in_mean = mean(reshape(y(z==1), 1, []), 'omitnan');
     in_std = std(reshape(y(z==1), 1, []), 'omitnan');
   else
+    % handle bad initialization (all outliers)--shouldn't happen
     in_mean = min(y(:));
     in_std = std(y(:), 'omitnan');
   end
@@ -84,6 +85,7 @@ function [matches] = find_matches(ref, src, idx, dist, init)
     out_mean = mean(reshape(y(z==-1), 1, []), 'omitnan');
     out_std = std(reshape(y(z==-1), 1, []), 'omitnan');
   else
+    % handle bad initialization (all inliers)--shouldn't happen
     out_mean = max(y(:));
     out_std = std(y(:), 'omitnan');
   end
@@ -92,10 +94,10 @@ function [matches] = find_matches(ref, src, idx, dist, init)
   assert(~isnan(out_mean));
   assert(~isnan(out_std));
 
-  for i=1:3
+  for i=1:10
     % E-step
     last_z = z;
-    mean_field = ([z(2:end,:); zeros(1, w)] + [zeros(1, w); z(1:end-1,:)] + [z(:,2:end) zeros(h, 1)] + [zeros(h, 1) z(:,1:end-1)])/4;
+    mean_field = [z(2:end,:); zeros(1, w)] + [zeros(1, w); z(1:end-1,:)] + [z(:,2:end) zeros(h, 1)] + [zeros(h, 1) z(:,1:end-1)];
     r_in = beta*mean_field - log(in_std) - (y - in_mean).^2/(2*in_std.^2) + gamma;
     r_out = -beta*mean_field - log(out_std) - (y - out_mean).^2/(2*out_std.^2) - gamma;
     z = 2*exp(r_in) ./ (exp(r_out) + exp(r_in)) - 1;
