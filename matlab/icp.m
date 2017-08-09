@@ -4,6 +4,7 @@ function [tf, iter, all_matches] = icp(ref, src, params)
     assignin('caller', 'localize', @(ref, src, do_scale) localize(ref, src, do_scale));
     assignin('caller', 'mat2aa', @(m) mat2aa(m));
     assignin('caller', 'aa2mat', @(axis, angle) aa2mat(axis, angle));
+    assignin('caller', 'downsample', @(cloud, h, w, s) downsample(cloud, h, w, s));
     tf = 0;
     matched = 0;
     return
@@ -90,6 +91,12 @@ function [tf, iter, all_matches] = icp(ref, src, params)
       break;
     end
   end
+end
+
+function [out_cloud] = downsample(cloud, w, h, s)
+  out_cloud = reshape(cloud, w, h, []);
+  out_cloud = out_cloud(1:s:end, 1:s:end, :);
+  out_cloud = reshape(out_cloud, floor(w/s)*floor(h/s), []);
 end
 
 function [Dmax] = choose_xi(dist, idx)

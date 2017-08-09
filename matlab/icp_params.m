@@ -13,5 +13,7 @@ classdef icp_params
     gamma = 0.;
     debug = false;
     verbose = false;
+    w = 640;
+    h = 480;
   end
 end

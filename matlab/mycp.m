@@ -1,7 +1,5 @@
 function [tf, iter, matched] = mycp(ref, src, params)
   global beta gamma
-  w = 640;
-  h = 480;
   beta = 4.0;
   gamma = 2.0;
   icp;
@@ -32,13 +30,13 @@ function [tf, iter, matched] = mycp(ref, src, params)
   for iter=1:params.iter_max
     [idx, dist] = knnsearch(kdtree, src);
 
-    init = -1*ones(w, h);
+    init = -1*ones(params.w, params.h);
     if matches==0
       init(find(dist < prctile(dist, 90))) = 1;
     else
       init(matches(:,1)) = 1;
     end
-    matches = find_matches(ref, src, idx, dist, init);
+    matches = find_matches(ref, src, idx, dist, init, params);
     all_matches{iter} = matches;
 
     % calculate transformation
@@ -65,11 +63,11 @@ function [tf, iter, matched] = mycp(ref, src, params)
   matched = matches;
 end
 
-function [matches] = find_matches(ref, src, idx, dist, init)
+function [matches] = find_matches(ref, src, idx, dist, init, params)
   global beta gamma
-  assert(all(size(init)==[640 480]))
-  [h w] = size(init);
-  y = reshape(dist, [h w]);
+  assert(all(size(init)==[params.w params.h]))
+  assert(all(~isnan(init(:))))
+  y = reshape(dist, [params.w params.h]);
   z = init;
 
   if sum(z(:)==1) > 2
@@ -94,12 +92,15 @@ function [matches] = find_matches(ref, src, idx, dist, init)
   assert(~isnan(out_mean));
   assert(~isnan(out_std));
 
-  for i=1:10
+  for i=1:3
     % E-step
     last_z = z;
-    mean_field = [z(2:end,:); zeros(1, w)] + [zeros(1, w); z(1:end-1,:)] + [z(:,2:end) zeros(h, 1)] + [zeros(h, 1) z(:,1:end-1)];
+    mean_field = [z(2:end,:); zeros(1, params.h)] + [zeros(1, params.h); z(1:end-1,:)] + [z(:,2:end) zeros(params.w, 1)] + [zeros(params.w, 1) z(:,1:end-1)];
+    assert(all(~isnan(mean_field(:))));
     r_in = beta*mean_field - log(in_std) - (y - in_mean).^2/(2*in_std.^2) + gamma;
+    r_in(isnan(r_in)) = beta*mean_field(isnan(r_in));
     r_out = -beta*mean_field - log(out_std) - (y - out_mean).^2/(2*out_std.^2) - gamma;
+    r_out(isnan(r_out)) = beta*mean_field(isnan(r_out));
     z = 2*exp(r_in) ./ (exp(r_out) + exp(r_in)) - 1;
     % M-step
     in_mean = sum((1+z(:))/2.*y(:), 'omitnan')...
@@ -111,8 +112,10 @@ function [matches] = find_matches(ref, src, idx, dist, init)
     out_std = sqrt(sum((1-z(:))/2.*y(:).^2, 'omitnan')...
       /sum((1-z(:))/2, 'omitnan') - out_mean.^2);
     if in_mean >= out_mean && params.debug
-      dbob.w = w;
-      dbob.h = h;
+      dbob.i = i;
+      dbob.init = init;
+      dbob.w = params.w;
+      dbob.h = params.h;
       dbob.r_in = r_in;
       dbob.r_out = r_out;
       dbob.z = z;
@@ -124,7 +127,10 @@ function [matches] = find_matches(ref, src, idx, dist, init)
       dbob.out_std = out_std;
       assignin('base', 'mycp_debug', dbob);
     end
-    assert(in_mean < out_mean);
+    if (in_mean < out_mean)
+      % this is a bad sign
+      break
+    end
     assert(~any(isnan([in_mean, in_std, out_mean, out_std])));
     if ~any(z(:) .* last_z(:) < 0)
       break
