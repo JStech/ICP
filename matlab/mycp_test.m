@@ -38,11 +38,11 @@ for src_frame=src_frames
         params.mode = m;
         [tf iters] = icp(c1, c2_t, params);
         tf_log = se3log(tf);
-        fprintf('%3d %8.5f %8.5f ', iters, norm(tf_log(1:3)), norm(tf_log(4:6))))
+        fprintf('%3d %8.5f %8.5f ', iters, norm(tf_log(1:3)), norm(tf_log(4:6)))
       end
       [tf iters] = mycp(c1, c2_t, params);
       tf_log = se3log(tf);
-      fprintf('%3d %8.5f %8.5f\n', iters, norm(tf_log(1:3)), norm(tf_log(4:6))))
+      fprintf('%3d %8.5f %8.5f\n', iters, norm(tf_log(1:3)), norm(tf_log(4:6)))
       pause(10)
     end
   end
