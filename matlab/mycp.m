@@ -1,4 +1,4 @@
-function [tf, iter] = mycp(ref, src, params)
+function [tf, iter, iter_start] = mycp(ref, src, params)
   icp;
 
   % we'll work with homogenous coords
@@ -27,14 +27,39 @@ function [tf, iter] = mycp(ref, src, params)
 
     if iter==1
       z(find(y > prctile(y, 90))) = -1;
-      % extra EM iteration when we first start
-      theta = M_step(z, y);
-      z = E_step(y, z, theta, params);
+      % extra EM iterations when we first start
+      start_zs = zeros(params.w, params.h, params.iter_max_start+1);
+      z_1 = ones(params.w, params.h);
+      for iter_start=1:params.iter_max_start
+        start_zs(:,:,iter_start) = z;
+        z_2 = z_1;
+        z_1 = z;
+        theta = M_step(z, y);
+        z = E_step(y, z, theta, params);
+        % second condition is to catch oscillating field
+        if all(z(:) .* z_1(:) >= 0) || ...
+          (iter_start > 1 && all(z(:) .* z_2(:) >= 0))
+          break
+        end
+      end
+      start_zs(:,:,iter_start+1) = z;
+      assignin('base', 'start_zs', start_zs)
+      if params.verbose
+        fprintf('Pre-iters %d: %f\n', iter_start, sum(z(:)>0)/prod(size(z)))
+      end
     end
 
     % update z, find matches
-    theta = M_step(z, y);
-    z = E_step(y, z, theta, params);
+    for inner_iter=1:params.iter_max_inner
+      theta = M_step(z, y);
+      z_2 = z_1;
+      z_1 = z;
+      z = E_step(y, z, theta, params);
+      if all(z(:) .* z_1(:) >= 0) || ...
+        all(z(:) .* z_2(:) >= 0)
+        break
+      end
+    end
     matches = [find(z>0) idx(find(z>0))];
 
     all_matches{iter} = matches;
@@ -59,20 +84,19 @@ function [tf, iter] = mycp(ref, src, params)
       break;
     end
   end
-  assignin('base', 'matches_mycp', all_matches);
+  if params.save_matches
+    assignin('base', 'matches_mycp', all_matches);
+  end
 end
 
 function [z] = E_step(y, z, theta, params)
   mean_field = [z(2:end,:); zeros(1, params.h)] + [zeros(1, params.h); z(1:end-1,:)] + [z(:,2:end) zeros(params.w, 1)] + [zeros(params.w, 1) z(:,1:end-1)];
-  assignin('base', 'db_params', params);
-  assignin('base', 'db_mean_field', mean_field);
-  assignin('base', 'db_theta', theta);
-  assignin('base', 'db_y', y);
   r_in = params.beta*mean_field - log(theta.in_std) - (y - theta.in_mean).^2/(2*theta.in_std.^2) + params.gamma;
   r_in(isnan(r_in)) = params.beta*mean_field(isnan(r_in));
   r_out = -params.beta*mean_field - log(theta.out_std) - (y - theta.out_mean).^2/(2*theta.out_std.^2) - params.gamma;
   r_out(isnan(r_out)) = params.beta*mean_field(isnan(r_out));
-  z = 2*exp(r_in) ./ (exp(r_out) + exp(r_in)) - 1;
+  r_min = min(r_in, r_out);
+  z = 2*exp(r_in-r_min) ./ (exp(r_out-r_min) + exp(r_in-r_min)) - 1;
   assert(all(~isnan(z(:))));
 end
 

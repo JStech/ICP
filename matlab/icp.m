@@ -50,6 +50,12 @@ function [tf, iter, all_matches] = icp(ref, src, params)
         Dmax = mu + 2.5*sigma;
         matches = find(dist < Dmax);
         matches = [matches idx(matches)];
+      case 'x84'
+        med = median(dist);
+        mad = median(abs(dist-med));
+        Dmax = med + 5.2*mad;
+        matches = find(dist < Dmax);
+        matches = [matches idx(matches)];
       case 'dynamic'
         matches = find(dist < Dmax);
         mu = mean(dist(matches));
