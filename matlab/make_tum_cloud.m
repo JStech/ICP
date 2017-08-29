@@ -24,4 +24,4 @@ for i = 1:n
 end
 
 cloud = pointCloud(points);
-pcwrite(cloud, '/Users/john/arpg/ICP/data/friburg1_desk.pcd');
+pcwrite(cloud, '/Users/john/arpg/ICP/data/freiburg1_desk.pcd', 'Encoding', 'compressed');

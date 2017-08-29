@@ -47,6 +47,7 @@ results.x84 = zeros(0, 4);
 results.dynamic = zeros(0, 4);
 results.hmrf = zeros(0, 5);
 
+angle=pi/30;
 for axis_i=[first_axis_i:last_axis_i]
   axis = axes(axis_i,:)';
   t_init = eye(4);
@@ -58,7 +59,6 @@ for axis_i=[first_axis_i:last_axis_i]
     c2_t = (true_tf*c2')' - origin;
     ol = calculate_overlap(c1, c2_t);
 
-    angle=pi/30;
     fprintf('%2d %4d %8.5f\n', axis_i, src_frame, ol)
 
     results.params = [results.params; src_frame, ol, angle];
