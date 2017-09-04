@@ -1,4 +1,4 @@
-if ~exist('cloud') || size(cloud.Location, 2) ~= 42
+if ~exist('cloud') || size(cloud.Location, 2) ~= 595
   cloud = pcread('../data/freiburg1_desk.pcd');
 end
 
