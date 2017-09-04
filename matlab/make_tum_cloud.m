@@ -7,7 +7,7 @@ w = 640;
 
 factor = 5000;
 
-files = dir('/Users/john/tum_data/rgbd_dataset_freiburg1_desk/depth/*.png');
+files = dir('~/tum_data/rgbd_dataset_freiburg1_desk/depth/*.png');
 n = length(files);
 
 points = zeros(h*w, n, 3);
