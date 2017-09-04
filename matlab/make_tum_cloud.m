@@ -23,6 +23,6 @@ for i = 1:n
   end
 end
 
-cloud = pointCloud(points);
-pcwrite(cloud, '/Users/john/arpg/ICP/data/freiburg1_desk.pcd', 'Encoding',
-'binary');
+save('../data/freiburg1_desk.mat', 'points', '-v7.3')
+%cloud = pointCloud(points);
+%pcwrite(cloud, '/Users/john/arpg/ICP/data/freiburg1_desk.pcd', 'Encoding', 'binary');

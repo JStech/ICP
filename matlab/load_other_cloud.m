@@ -1,5 +1,7 @@
 if ~exist('cloud') || size(cloud.Location, 2) ~= 595
-  cloud = pcread('../data/freiburg1_desk.pcd');
+  load('../data/freiburg1_desk.mat');
+  cloud = pointCloud(points);
+  clear points;
 end
 
 project = @(pts) pts(:,1:3)./pts(:,4);

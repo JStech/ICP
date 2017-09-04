@@ -1,10 +1,10 @@
-load_cloud
-load_poses
+load_other_cloud
+load_other_poses
 icp
 
-start_frame = 70;
+start_frame = 43;
 frame_step = 1;
-num_steps = 1088-start_frame;
+num_steps = 595-start_frame;
 overlaps = zeros(1, num_steps);
 
 c1 = unproject(getcloud(start_frame));
