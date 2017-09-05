@@ -15,10 +15,14 @@ for i = 1:n
   depth_image = imread([files(i).folder '/' files(i).name]);
   for v = 1:h
     for u = 1:w
-      Z = double(depth_image(v, u)) / factor;
-      X = (u - cx) * Z / fx;
-      Y = (v - cy) * Z / fy;
-      points((v-1)*w+u, i,:) = [X Y Z];
+      if depth_image(v, u)==0
+        points((v-1)*w+u, i,:) = [nan nan nan];
+      else
+        Z = double(depth_image(v, u)) / factor;
+        X = (u - cx) * Z / fx;
+        Y = (v - cy) * Z / fy;
+        points((v-1)*w+u, i,:) = [X Y Z];
+      end
     end
   end
 end

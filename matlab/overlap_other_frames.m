@@ -1,6 +1,6 @@
-load_other_cloud
-load_other_poses
-icp
+load_other_cloud;
+load_other_poses;
+icp;
 
 start_frame = 43;
 frame_step = 1;
