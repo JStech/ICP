@@ -16,6 +16,7 @@ delta_t = raw_poses(next_pose_i, 1) - raw_poses(next_pose_i-1, 1);
 c = abs(raw_poses(next_pose_i, 1) - timestamps)./delta_t;
 poses = c.*raw_poses(next_pose_i-1, 2:end) + ...
         (1-c).*raw_poses(next_pose_i, 2:end);
+poses = [poses(:,4:7) poses(:,1:3)];
 poses(:,1:4) = poses(:, 1:4) ./ sqrt(sum(poses(:, 1:4).^2, 2));
 
 q = poses(:,1:4);
