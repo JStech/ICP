@@ -1,5 +1,7 @@
-load_cloud
-load_poses
+%load_cloud
+%load_poses
+load_other_cloud
+load_other_poses
 icp;
 
 params = icp_params;
@@ -11,10 +13,14 @@ params.iter_max_inner = 20;
 params.iter_max = 50;
 
 % frames for testing; overlaps 0.3251 0.5000 0.6993 0.8935 0.9844
-ref_frame = 70;
-src_frames = [27 53 247 257 260 267 273 287 334 370 394 418 422 434 455 464 ...
-517 568 628 647 653 662 666 677 686 689 693 703 706 719 726 747 803 844 878 ...
-879 889 897 903 936] + ref_frame;
+%ref_frame = 70;
+%src_frames = [27 53 247 257 260 267 273 287 334 370 394 418 422 434 455 464 ...
+%517 568 628 647 653 662 666 677 686 689 693 703 706 719 726 747 803 844 878 ...
+%879 889 897 903 936] + ref_frame;
+ref_frame = 156;
+src_frames = [15 35 38 39 41 47 89 129 133 135 148 150 151 154 155 157 158 ...
+159 160 162 163 167 171 181 184 190 197 204 205 219 256 271 282 290 301 313 ...
+344 355 363 365 382 417 465 471 481 489 513 518 554 573];
 
 axes = [0.7295   -0.4166    0.5425
         0.8532   -0.5095    0.1116
@@ -71,11 +77,15 @@ for axis_i=[first_axis_i:last_axis_i]
       tf_log = se3log(tf);
       results.(m) = [results.(m); iters, elapsed, norm(tf_log(1:3)), norm(tf_log(4:6))];
     end
-    tic;
-    [tf iters iters_start] = mycp(c1, c2_t, params);
-    elapsed = toc;
-    tf_log = se3log(tf);
-    results.hmrf = [results.hmrf; iters_start, iters, elapsed, norm(tf_log(1:3)), norm(tf_log(4:6))];
+    try
+      tic;
+      [tf iters iters_start] = mycp(c1, c2_t, params);
+      elapsed = toc;
+      tf_log = se3log(tf);
+      results.hmrf = [results.hmrf; iters_start, iters, elapsed, norm(tf_log(1:3)), norm(tf_log(4:6))];
+    catch ae
+      results.hmrf = [results.hmrf; nan, nan, nan, nan, nan];
+    end
     pause(20)
   end
 end
