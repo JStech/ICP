@@ -34,7 +34,7 @@ function [tf, iter, iter_start] = mycp(ref, src, params)
       z(find(y > prctile(y, 90))) = -1;
       if params.make_animation
         anim.zfields = z;
-        anim.clouds = [[src(:,1:3); ref(:,1:3)] [ones(n_src, 1) zeros(n_src, 2); zeros(n_ref, 2) ones(n_ref, 1)]];
+        anim.clouds = make_colored_clouds(src, ref, z);
       end
       % extra EM iterations when we first start
       start_zs = zeros(params.w, params.h, params.iter_max_start+1);
@@ -47,7 +47,7 @@ function [tf, iter, iter_start] = mycp(ref, src, params)
         z = E_step(y, z, theta, params);
         if params.make_animation
           anim.zfields = cat(3, anim.zfields, z);
-          anim.clouds = cat(3, anim.clouds, [[src(:,1:3); ref(:,1:3)] [ones(n_src, 1) zeros(n_src, 2); zeros(n_ref, 2) ones(n_ref, 1)]]);
+          anim.clouds = cat(3, anim.clouds, [[src(:,1:3); ref(:,1:3)] [zeros(n_src, 2) ones(n_src, 1); ones(n_ref, 1) zeros(n_ref, 2)]]);
         end
         % second condition is to catch oscillating field
         if all(z(:) .* z_1(:) >= 0) || ...
@@ -71,7 +71,7 @@ function [tf, iter, iter_start] = mycp(ref, src, params)
       z = E_step(y, z, theta, params);
       if params.make_animation
         anim.zfields = cat(3, anim.zfields, z);
-        anim.clouds = cat(3, anim.clouds, [[src(:,1:3); ref(:,1:3)] [ones(n_src, 1) zeros(n_src, 2); zeros(n_ref, 2) ones(n_ref, 1)]]);
+        anim.clouds = cat(3, anim.clouds, [[src(:,1:3); ref(:,1:3)] [zeros(n_src, 2) ones(n_src, 1); ones(n_ref, 1) zeros(n_ref, 2)]]);
       end
       if all(z(:) .* z_1(:) >= 0) || ...
         all(z(:) .* z_2(:) >= 0)
@@ -135,4 +135,12 @@ function [theta] = M_step(z, y)
   assert(~isnan(theta.in_std))
   assert(~isnan(theta.out_mean))
   assert(~isnan(theta.out_std))
+end
+
+function [colored_cloud] = make_colored_clouds(src, ref, z)
+  n_src = size(src, 1);
+  n_ref = size(ref, 1);
+  colored_cloud = [[src(:,1:3); ref(:,1:3)] ...
+    [zeros(n_src, 2), .75+reshape(z, [], 1)/4;
+    ones(n_ref, 1), zeros(n_ref, 2)]];
 end
