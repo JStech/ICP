@@ -16,6 +16,7 @@ classdef icp_params
     debug = false;
     verbose = false;
     save_matches = false;
+    make_animation = false;
     w = 640;
     h = 480;
   end

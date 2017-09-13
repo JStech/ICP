@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(ICP)
 
+cmake_policy(SET CMP0025 NEW)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
@@ -16,8 +17,12 @@ if(BUILD_ICP_TEST)
   find_package(SceneGraph REQUIRED)
 endif()
 
-set(CMAKE_C_COMPILER clang-omp CACHE STRING "C compiler" FORCE)
-set(CMAKE_CXX_COMPILER clang-omp++ CACHE STRING "C++ compiler" FORCE)
+if(BUILD_ICP)
+  find_package(CImg REQUIRED)
+endif()
+
+set(CMAKE_C_COMPILER clang CACHE STRING "C compiler" FORCE)
+set(CMAKE_CXX_COMPILER clang++ CACHE STRING "C++ compiler" FORCE)
 
 find_package(PCL REQUIRED)
 find_package(OpenMP REQUIRED)
@@ -35,6 +40,7 @@ endif()
 
 if (BUILD_ICP)
    include_directories( ${Sophus_INCLUDE_DIRS})
+   include_directories( ${CImg_INCLUDE_DIRS} )
 endif()
 
 include_directories( ${PCL_INCLUDE_DIRS} )
@@ -74,6 +80,9 @@ if(BUILD_ICP)
 
   add_executable( aggregate_pc src/aggregate_pc.cpp )
   add_executable( make_pc src/make_pc.cpp )
+  add_executable( make_other_pc src/make_other_pc.cpp )
+  link_directories(${CImg_SYSTEM_LIBS_DIR})
+  target_link_libraries( make_other_pc ${CImg_SYSTEM_LIBS} )
   add_executable( plot_pc src/plot_pc.cpp )
   add_executable( edit_pc src/edit_pc.cpp )
 
