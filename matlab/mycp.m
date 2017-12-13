@@ -47,12 +47,15 @@ function [tf, iter, iter_start] = mycp(ref, src, params)
         z = E_step(y, z, theta, params);
         if params.make_animation
           anim.zfields = cat(3, anim.zfields, z);
-          anim.clouds = cat(3, anim.clouds, [[src(:,1:3); ref(:,1:3)] [zeros(n_src, 2) ones(n_src, 1); ones(n_ref, 1) zeros(n_ref, 2)]]);
+          anim.clouds = cat(3, anim.clouds, make_colored_clouds(src, ref, z));
         end
         % second condition is to catch oscillating field
         if all(z(:) .* z_1(:) >= 0) || ...
           (iter_start > 1 && all(z(:) .* z_2(:) >= 0))
           break
+        end
+        if params.verbose && mod(iter_start, 10)==0
+          fprintf('Pre-iters %d: %f\n', iter_start, sum(z(:)>0)/prod(size(z)))
         end
       end
       start_zs(:,:,iter_start+1) = z;
@@ -71,7 +74,7 @@ function [tf, iter, iter_start] = mycp(ref, src, params)
       z = E_step(y, z, theta, params);
       if params.make_animation
         anim.zfields = cat(3, anim.zfields, z);
-        anim.clouds = cat(3, anim.clouds, [[src(:,1:3); ref(:,1:3)] [zeros(n_src, 2) ones(n_src, 1); ones(n_ref, 1) zeros(n_ref, 2)]]);
+        anim.clouds = cat(3, anim.clouds, make_colored_clouds(src, ref, z));
       end
       if all(z(:) .* z_1(:) >= 0) || ...
         all(z(:) .* z_2(:) >= 0)
@@ -112,6 +115,7 @@ function [tf, iter, iter_start] = mycp(ref, src, params)
 end
 
 function [z] = E_step(y, z, theta, params)
+  pause(1)
   mean_field = [z(2:end,:); zeros(1, params.h)] + [zeros(1, params.h); z(1:end-1,:)] + [z(:,2:end) zeros(params.w, 1)] + [zeros(params.w, 1) z(:,1:end-1)];
   r_in = params.beta*mean_field - log(theta.in_std) - (y - theta.in_mean).^2/(2*theta.in_std.^2) + params.gamma;
   r_in(isnan(r_in)) = params.beta*mean_field(isnan(r_in));
@@ -141,6 +145,6 @@ function [colored_cloud] = make_colored_clouds(src, ref, z)
   n_src = size(src, 1);
   n_ref = size(ref, 1);
   colored_cloud = [[src(:,1:3); ref(:,1:3)] ...
-    [zeros(n_src, 2), .75+reshape(z, [], 1)/4;
+    [repmat(.25-reshape(z, [], 1)/4, [1 2]), ones(n_src, 1);
     ones(n_ref, 1), zeros(n_ref, 2)]];
 end

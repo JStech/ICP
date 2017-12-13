@@ -39,7 +39,7 @@ origin = mean(c1, 'omitnan');
 origin(4) = 0;
 c1 = c1 - origin;
 
-angle=pi/20;
+angle=pi/10;
 axis = axes(axis_i,:)';
 t_init = eye(4);
 t_init(1:3,1:3) = aa2mat(axis, angle);
