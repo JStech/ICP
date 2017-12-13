@@ -1,4 +1,4 @@
-function [tf, iter, iter_start] = mycp(ref, src, params)
+function [tf, iter, iter_start] = hmrf_icp(ref, src, params)
   icp;
 
   if params.make_animation
@@ -107,7 +107,7 @@ function [tf, iter, iter_start] = mycp(ref, src, params)
   end
   assignin('base', 'z_final', z);
   if params.save_matches
-    assignin('base', 'matches_mycp', all_matches);
+    assignin('base', 'matches_hmrf_icp', all_matches);
   end
   if params.make_animation
     assignin('base', 'anim', anim);

@@ -52,4 +52,4 @@ ol = calculate_overlap(c1, c2_t);
 
 fprintf('%2d %4d %8.5f\n', axis_i, src_frame, ol)
 
-[tf iters iters_start] = mycp(c1, c2_t, params);
+[tf iters iters_start] = hmrf_icp(c1, c2_t, params);

@@ -81,7 +81,7 @@ for axis_i=[first_axis_i:last_axis_i]
     end
     try
       tic;
-      [tf iters iters_start] = mycp(c1, c2_t, params);
+      [tf iters iters_start] = hmrf_icp(c1, c2_t, params);
       elapsed = toc;
       tf_log = se3log(tf);
       results.hmrf = [results.hmrf; iters_start, iters, elapsed, norm(tf_log(1:3)), norm(tf_log(4:6))];
