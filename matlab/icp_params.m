@@ -5,9 +5,9 @@ classdef icp_params
     dth_thresh = 0.001;
     scale_thresh = 0.001;
     t_init = eye(4);
-    iter_max = 100;
-    iter_max_start = 1000;
-    iter_max_inner = 100;
+    icp_iter_max = 100;
+    em_iter_max_start = 1000;
+    em_iter_max = 100;
     % ICP mode: all, pct, sigma, dynamic, x84
     mode = 'all';
     D = 1.;
@@ -15,7 +15,6 @@ classdef icp_params
     gamma = 0.;
     debug = false;
     verbose = false;
-    save_matches = false;
     make_animation = false;
     w = 640;
     h = 480;

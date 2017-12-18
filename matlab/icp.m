@@ -34,7 +34,7 @@ function [tf, iter, all_matches] = icp(ref, src, params)
   src = (tf * src')';
 
   all_matches = cell(0);
-  for iter=1:params.iter_max
+  for iter=1:params.icp_iter_max
     [idx, dist] = knnsearch(kdtree, src);
 
     switch params.mode

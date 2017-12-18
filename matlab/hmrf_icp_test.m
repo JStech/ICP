@@ -1,27 +1,3 @@
-load_cloud
-load_poses
-%load_other_cloud
-%load_other_poses
-icp;
-
-params = icp_params;
-params.h = 240;
-params.w = 320;
-params.debug = 1;
-params.iter_max_start = 600;
-params.iter_max_inner = 20;
-params.iter_max = 50;
-
-ref_frame = 70;
-src_frames = [27 53 247 257 260 267 273 287 334 370 394 418 422 434 455 464 ...
-517 568 628 647 653 662 666 677 686 689 693 703 706 719 726 747 803 844 878 ...
-879 889 897 903 936] + ref_frame;
-src_frames = 763;
-%ref_frame = 156;
-%src_frames = [15 35 38 39 41 47 89 129 133 135 148 150 151 154 155 157 158 ...
-%159 160 162 163 167 171 181 184 190 197 204 205 219 256 271 282 290 301 313 ...
-%344 355 363 365 382 417 465 471 481 489 513 518 554 573];
-
 axes = [0.7295   -0.4166    0.5425
         0.8532   -0.5095    0.1116
         0.6788   -0.2187   -0.7010
@@ -39,19 +15,47 @@ axes = [0.7295   -0.4166    0.5425
        -0.9671   -0.1616    0.1965
         0.8934   -0.0745   -0.4431];
 
+% just make sure these are defined before loading the point clouds
+assert(1 <= first_axis_i && first_axis_i <= last_axis_i && ...
+    last_axis_i <= size(axes, 1));
+load_cloud;
+load_poses;
+%load_other_cloud;
+%load_other_poses;
+icp;
+
+params = icp_params;
+params.h = 240;
+params.w = 320;
+params.debug = 1;
+params.icp_iter_max = 50;
+params.em_iter_max_start = 600;
+params.em_iter_max = 20;
+params.verbose = false;
+
+ref_frame = 70;
+src_frames = [27 53 247 257 260 267 273 287 334 370 394 418 422 434 455 464 ...
+517 568 628 647 653 662 666 677 686 689 693 703 706 719 726 747 803 844 878 ...
+879 889 897 903 936] + ref_frame;
+src_frames = 763;
+%ref_frame = 156;
+%src_frames = [15 35 38 39 41 47 89 129 133 135 148 150 151 154 155 157 158 ...
+%159 160 162 163 167 171 181 184 190 197 204 205 219 256 271 282 290 301 313 ...
+%344 355 363 365 382 417 465 471 481 489 513 518 554 573];
+
 c1 = downsample(unproject(getcloud(ref_frame)), 640, 480, 2);
 origin = mean(c1, 'omitnan');
 origin(4) = 0;
 c1 = c1 - origin;
 
 clear results;
-results.params = zeros(0, 3);
-results.all = zeros(0, 4);
-results.pct = zeros(0, 4);
-results.sigma = zeros(0, 4);
-results.x84 = zeros(0, 4);
-results.dynamic = zeros(0, 4);
-results.hmrf = zeros(0, 5);
+results.params = [];
+results.all = [];
+results.pct = [];
+results.sigma = [];
+results.x84 = [];
+results.dynamic = [];
+results.hmrf = {};
 
 angle=pi/30;
 for axis_i=[first_axis_i:last_axis_i]
@@ -65,29 +69,28 @@ for axis_i=[first_axis_i:last_axis_i]
     c2_t = (true_tf*c2')' - origin;
     ol = calculate_overlap(c1, c2_t);
 
-    fprintf('%2d %4d %8.5f\n', axis_i, src_frame, ol)
+    fprintf('%2d %4d %8.5f\n', axis_i, src_frame, ol);
 
     results.params = [results.params; src_frame, ol, angle];
-    if false
-      for mode = {'all' 'pct' 'sigma' 'x84' 'dynamic'}
-        m = mode{1};
-        params.mode = m;
-        tic;
-        [tf iters] = icp(c1, c2_t, params);
-        elapsed = toc;
-        tf_log = se3log(tf);
-        results.(m) = [results.(m); iters, elapsed, norm(tf_log(1:3)), norm(tf_log(4:6))];
-      end
-    end
-    try
+    for mode = {'all' 'pct' 'sigma' 'x84' 'dynamic'}
+      m = mode{1};
+      params.mode = m;
       tic;
-      [tf iters iters_start] = hmrf_icp(c1, c2_t, params);
+      [tf iters] = icp(c1, c2_t, params);
       elapsed = toc;
       tf_log = se3log(tf);
-      results.hmrf = [results.hmrf; iters_start, iters, elapsed, norm(tf_log(1:3)), norm(tf_log(4:6))];
-    catch ae
-      results.hmrf = [results.hmrf; nan, nan, nan, nan, nan];
+      results.(m) = [results.(m); iters, elapsed, norm(tf_log(1:3)), norm(tf_log(4:6))];
     end
-    pause(20)
+    %try
+      tic;
+      [tf data] = hmrf_icp(c1, c2_t, params);
+      elapsed = toc;
+      tf_log = se3log(tf);
+      results.hmrf{axis_i} = [data.icp_iters, elapsed, norm(tf_log(1:3)), ...
+        norm(tf_log(4:6)), data.em_iters];
+    %catch ae
+      %results.hmrf = [results.hmrf; nan, nan, nan, nan, nan];
+    %end
+    pause(20);
   end
 end
