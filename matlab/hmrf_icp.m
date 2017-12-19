@@ -1,7 +1,6 @@
 function [tf, data] = hmrf_icp(ref, src, params)
   icp;
   data = icp_data();
-  data.params = params;
   data.src = src;
   data.ref = ref;
   data.em_iters = [];
@@ -41,10 +40,11 @@ function [tf, data] = hmrf_icp(ref, src, params)
         data.anim.clouds = make_colored_clouds(src, ref, z);
       end
       % extra EM iterations when we first start
-      [z, theta, iters, data] = EM(y, z, params.em_iter_max_start, data);
-      % EM_pyramid(y, z, params.em_iter_max_start, 3, data);
+      [z, theta, iters, data] = EM_pyramid(y, z, params.em_iter_max_start, ...
+        params, data);
     else
-      [z, theta, iters, data] = EM(y, z, params.em_iter_max, data);
+      [z, theta, iters, data] = EM_pyramid(y, z, params.em_iter_max, ...
+        params, data);
     end
 
     % find matches
@@ -99,26 +99,32 @@ function [theta] = M_step(z, y)
   assert(~isnan(theta.out_std));
 end
 
-function [z, theta, iters, data] = EM_pyramid(y, z, max_iter, pyramid_levels, data)
+function [z, theta, iters, data] = EM_pyramid(y, z, max_iter, params, data)
   zs = {z};
   ys = {y};
-  for p=[2:pyramid_levels]
-    zs{p} = zs{p-1}(1+mod(p, 2):2:end,1:2:end);
-    ys{p} = ys{p-1}(1+mod(p, 2):2:end,1:2:end);
+  for p=[2:params.pyramid_levels]
+    zs{p} = zs{p-1}(1+mod(p, 2):2:end, 1+mod(p, 2):2:end);
+    ys{p} = ys{p-1}(1+mod(p, 2):2:end, 1+mod(p, 2):2:end);
   end
-  for p=[pyramid_levels:-1:1]
-    [zs{p} theta iters data] = EM(ys{p}, zs{p}, max_iter, data);
+  for p=[params.pyramid_levels:-1:1]
+    params.w = size(zs{p}, 1);
+    params.h = size(zs{p}, 2);
+    [zs{p} theta iters data] = EM(ys{p}, zs{p}, max_iter, params, data);
+    if p>1
+      zs{p-1} = repelem(zs{p}, 2, 2);
+    end
   end
+  z = zs{1};
 end
 
-function [z, theta, iters, data] = EM(y, z, max_iter, data)
-  z1 = randi(3, data.params.w, data.params.h)-2;
+function [z, theta, iters, data] = EM(y, z, max_iter, params, data)
+  z1 = randi(3, params.w, params.h)-2;
   for iters=[1:max_iter]
     z2 = z1;
     z1 = z;
     theta = M_step(z, y);
-    z = E_step(y, z, theta, data.params);
-    if data.params.make_animation
+    z = E_step(y, z, theta, params);
+    if params.make_animation
       data.anim.zfields = cat(3, data.anim.zfields, z);
       data.anim.clouds = cat(3, data.anim.clouds, ...
           make_colored_clouds(data.src, data.ref, z));
@@ -127,7 +133,7 @@ function [z, theta, iters, data] = EM(y, z, max_iter, data)
       (iters > 1 && all(z(:) .* z2(:) >= 0))
       break
     end
-    if data.params.verbose && mod(iters, 10)==0
+    if params.verbose && mod(iters, 10)==0
       fprintf('Iters %d: %f\n', iters, sum(z(:)>0)/prod(size(z)));
     end
   end

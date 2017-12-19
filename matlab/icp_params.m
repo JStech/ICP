@@ -18,5 +18,6 @@ classdef icp_params
     make_animation = false;
     w = 640;
     h = 480;
+    pyramid_levels = 3;
   end
 end

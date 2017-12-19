@@ -1,6 +1,5 @@
 classdef icp_data
   properties
-    params;
     anim;
     src;
     ref;
