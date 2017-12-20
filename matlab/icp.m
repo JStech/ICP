@@ -1,15 +1,4 @@
 function [tf, iter, all_matches] = icp(ref, src, params)
-  assignin('caller', 'plot_icp', @(ref, src, tf, ds) plot_icp(ref, src, tf, ds));
-  if nargin==0
-    assignin('caller', 'localize', @(ref, src, do_scale) localize(ref, src, do_scale));
-    assignin('caller', 'mat2aa', @(m) mat2aa(m));
-    assignin('caller', 'aa2mat', @(axis, angle) aa2mat(axis, angle));
-    assignin('caller', 'downsample', @(cloud, h, w, s) downsample(cloud, h, w, s));
-    tf = 0;
-    matched = 0;
-    return
-  end
-
   if strcmp(params.mode, 'dynamic')
     Dmax = 20*params.D;
   end
@@ -99,12 +88,6 @@ function [tf, iter, all_matches] = icp(ref, src, params)
   end
 end
 
-function [out_cloud] = downsample(cloud, w, h, s)
-  out_cloud = reshape(cloud, w, h, []);
-  out_cloud = out_cloud(1:s:end, 1:s:end, :);
-  out_cloud = reshape(out_cloud, floor(w/s)*floor(h/s), []);
-end
-
 function [Dmax] = choose_xi(dist, idx)
   [h, e] = histcounts(dist, 20);
   [m, i] = max(h);
@@ -118,67 +101,4 @@ function [Dmax] = choose_xi(dist, idx)
       break;
     end
   end
-end
-
-function [tf] = localize(ref, src, do_scale)
-  if nargin==2
-    do_scale = false;
-  end
-  assert(size(ref, 2) == 4);
-  assert(size(src, 2) == 4);
-  assert(~any(isnan(ref(:))));
-  assert(~any(isnan(src(:))));
-
-  % project
-  ref = ref(:,1:3)./ref(:,4);
-  src = src(:,1:3)./src(:,4);
-
-  assert(all(~isinf(ref(:))));
-  assert(all(~isinf(src(:))));
-
-  ref_centroid = mean(ref);
-  src_centroid = mean(src);
-
-  if do_scale
-    scale = mean(sqrt(sum((src - src_centroid).^2, 2)./...
-    sum((ref - ref_centroid).^2, 2)));
-  else
-    scale = 1.;
-  end
-
-  M = ((src - src_centroid)/scale)' * (ref - ref_centroid);
-  [u s v] = svd(M);
-  R = eye(4);
-  R(1:3, 1:3) = (u * v')'/scale;
-  T1 = eye(4);
-  T2 = eye(4);
-  T1(1:3, 4) = -src_centroid;
-  T2(1:3, 4) = ref_centroid;
-  tf = T2 * R * T1;
-end
-
-function [] = plot_icp(ref, src, tf, ds)
-  if ~exist('ds')
-    ds = 1;
-  end
-  n_src = size(src, 1);
-  figure;
-  hold on
-  pcshow(src(1:ds:end,1:3), [1 .5 .5], 'MarkerSize', 1)
-  pcshow(ref(1:ds:end,1:3), 'blue', 'MarkerSize', 1)
-  src_m = (tf * src')';
-  pcshow(src_m(1:ds:end,1:3), 'red', 'MarkerSize', 1)
-  hold off
-end
-
-function [axis, angle] = mat2aa(m)
-  angle = acos((m(1,1) + m(2,2) + m(3,3) - 1)/2);
-  axis = [m(3, 2) - m(2, 3); m(1, 3) - m(3, 1); m(2, 1) - m(1, 2)];
-  axis = axis ./ norm(axis);
-end
-
-function [m] = aa2mat(axis, angle)
-  m = [cos(angle) + axis(1)^2*(1-cos(angle)), axis(1)*axis(2)*(1-cos(angle))-axis(3)*sin(angle), axis(1)*axis(3)*(1-cos(angle)) + axis(2)*sin(angle);
-  axis(2)*axis(1)*(1-cos(angle))+axis(3)*sin(angle), cos(angle)+axis(2)^2*(1-cos(angle)), axis(2)*axis(3)*(1-cos(angle))-axis(1)*sin(angle);
-  axis(3)*axis(1)*(1-cos(angle))-axis(2)*sin(angle), axis(3)*axis(2)*(1-cos(angle)) + axis(1)*sin(angle), cos(angle) + axis(3)^2*(1-cos(angle))];
 end

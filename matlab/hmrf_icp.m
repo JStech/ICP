@@ -1,5 +1,4 @@
 function [tf, data] = hmrf_icp(ref, src, params)
-  icp;
   data = icp_data();
   data.src = src;
   data.ref = ref;

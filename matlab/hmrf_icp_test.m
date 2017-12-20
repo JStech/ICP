@@ -1,3 +1,5 @@
+function [results] = hmrf_icp_test(first_axis_i, last_axis_i, angles)
+global cloudLoc;
 axes = [0.7295   -0.4166    0.5425
         0.8532   -0.5095    0.1116
         0.6788   -0.2187   -0.7010
@@ -18,11 +20,12 @@ axes = [0.7295   -0.4166    0.5425
 % just make sure these are defined before loading the point clouds
 assert(1 <= first_axis_i && first_axis_i <= last_axis_i && ...
     last_axis_i <= size(axes, 1));
-load_cloud;
+%load_cloud;
+fprintf('Loading clouds and poses\n')
+load_data;
 load_poses;
 %load_other_cloud;
 %load_other_poses;
-icp;
 
 params = icp_params;
 params.h = 240;
@@ -48,49 +51,50 @@ origin = mean(c1, 'omitnan');
 origin(4) = 0;
 c1 = c1 - origin;
 
-clear results;
-results.params = [];
-results.all = [];
-results.pct = [];
-results.sigma = [];
-results.x84 = [];
-results.dynamic = [];
+results.params = {};
+results.all = {};
+results.pct = {};
+results.sigma = {};
+results.x84 = {};
+results.dynamic = {};
 results.hmrf = {};
 
-angle=pi/30;
-for axis_i=[first_axis_i:last_axis_i]
-  axis = axes(axis_i,:)';
-  t_init = eye(4);
-  t_init(1:3,1:3) = aa2mat(axis, angle);
-  params.t_init = t_init;
-  for src_frame=src_frames
-    c2 = downsample(unproject(getcloud(src_frame)), 640, 480, 2);
-    true_tf = inv(pmats{ref_frame})*pmats{src_frame};
-    c2_t = (true_tf*c2')' - origin;
-    ol = calculate_overlap(c1, c2_t);
+for angle_i=1:length(angles)
+  angle = angles(angle_i);
+  for axis_i=[first_axis_i:last_axis_i]
+    axis = axes(axis_i,:)';
+    t_init = eye(4);
+    t_init(1:3,1:3) = aa2mat(axis, angle);
+    params.t_init = t_init;
+    for src_frame=src_frames
+      c2 = downsample(unproject(getcloud(src_frame)), 640, 480, 2);
+      true_tf = inv(pmats{ref_frame})*pmats{src_frame};
+      c2_t = (true_tf*c2')' - origin;
+      ol = calculate_overlap(c1, c2_t);
 
-    fprintf('%2d %4d %8.5f\n', axis_i, src_frame, ol);
+      fprintf('%2d %8.5f %4d %8.5f\n', axis_i, angle, src_frame, ol);
 
-    results.params = [results.params; src_frame, ol, angle];
-    for mode = {'all' 'pct' 'sigma' 'x84' 'dynamic'}
-      m = mode{1};
-      params.mode = m;
-      tic;
-      [tf iters] = icp(c1, c2_t, params);
-      elapsed = toc;
-      tf_log = se3log(tf);
-      results.(m) = [results.(m); iters, elapsed, norm(tf_log(1:3)), norm(tf_log(4:6))];
+      results.params{angle_i, axis_i} = [src_frame, ol, angle];
+      for mode = {'all' 'pct' 'sigma' 'x84' 'dynamic'}
+        m = mode{1};
+        params.mode = m;
+        tic;
+        [tf iters] = icp(c1, c2_t, params);
+        elapsed = toc;
+        tf_log = se3log(tf);
+        results.(m){angle_i, axis_i} = [iters, elapsed, norm(tf_log(1:3)), norm(tf_log(4:6))];
+      end
+      try
+        tic;
+        [tf data] = hmrf_icp(c1, c2_t, params);
+        elapsed = toc;
+        tf_log = se3log(tf);
+        results.hmrf{angle_i, axis_i} = [data.icp_iters, elapsed, ...
+          norm(tf_log(1:3)), norm(tf_log(4:6)), data.em_iters];
+      catch ae
+        results.hmrf{angle_i, axis_i} = nan;
+      end
     end
-    %try
-      tic;
-      [tf data] = hmrf_icp(c1, c2_t, params);
-      elapsed = toc;
-      tf_log = se3log(tf);
-      results.hmrf{axis_i} = [data.icp_iters, elapsed, norm(tf_log(1:3)), ...
-        norm(tf_log(4:6)), data.em_iters];
-    %catch ae
-      %results.hmrf = [results.hmrf; nan, nan, nan, nan, nan];
-    %end
-    pause(20);
   end
+end
 end
