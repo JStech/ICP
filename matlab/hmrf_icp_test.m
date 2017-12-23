@@ -75,7 +75,7 @@ for angle_i=1:length(angles)
 
       fprintf('%2d %8.5f %4d %8.5f\n', axis_i, angle, src_frame, ol);
 
-      results.params{angle_i, axis_i} = [src_frame, ol, angle];
+      results.params{angle_i, axis_i, src_frame_i} = [src_frame, ol, angle];
       for mode = {'all' 'pct' 'sigma' 'x84' 'dynamic'}
         m = mode{1};
         params.mode = m;
