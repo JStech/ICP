@@ -18,10 +18,11 @@ function [tf, elapsed] = goicp(ref, src)
 
   % run it
   cmd = './GoICP tmp_ref.txt tmp_src.txt 1000 Go-ICP-config.txt tmp_output.txt';
-  s = system(cmd)
+  s = system(cmd);
   if s > 0
     tf = nan(4);
     elapsed = nan;
+    delete tmp_*.txt
     return;
   end
 
@@ -34,5 +35,5 @@ function [tf, elapsed] = goicp(ref, src)
   tf = eye(4);
   tf(1:3,1:3) = R;
   tf(1:3,4) = t;
-  delete tmp_ref.txt tmp_src.txt tmp_output.txt
+  delete tmp_*.txt
 end
