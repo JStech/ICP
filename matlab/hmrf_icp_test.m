@@ -29,7 +29,6 @@ axes = [0.7295   -0.4166    0.5425
        -0.9671   -0.1616    0.1965
         0.8934   -0.0745   -0.4431];
 
-%load_cloud;
 fprintf('Loading clouds and poses\n')
 switch data
 case 'shark'
@@ -62,9 +61,16 @@ results.goicp = {};
 for angle_i=1:length(angles)
   angle = angles(angle_i);
   for frame_pair_i=1:length(selected)
+    axis_i = randi(length(axes));
+    axis = axes(axis_i, :)';
+    t_init = eye(4);
+    t_init(1:3,1:3) = aa2mat(axis, angle);
+    params.t_init = t_init;
+
     ol = selected(frame_pair_i, 1);
     ref_frame = selected(frame_pair_i, 2);
     src_frame = selected(frame_pair_i, 3);
+
     c1 = downsample(unproject(getcloud(ref_frame)), 640, 480, 2);
     origin = mean(c1, 'omitnan');
     origin(4) = 0;
@@ -74,27 +80,32 @@ for angle_i=1:length(angles)
     c2_t = (true_tf*c2')' - origin;
     ol = calculate_overlap(c1, c2_t);
 
-    fprintf('%2d %8.5f %4d %8.5f\n', axis_i, angle, src_frame, ol);
+    fprintf('%4d %4d %8.5f %8.5f %3d\n', ref_frame, src_frame, ol, angle, axis_i);
 
-    results.params{angle_i, axis_i, src_frame_i} = [src_frame, ol, angle];
-    for mode = {'all' 'pct' 'sigma' 'x84' 'dynamic'}
+    results.params{angle_i, frame_pair_i} = ...
+        [ref_frame, src_frame, ol, angle, axis_i];
+    for mode = {'all' 'pct' 'sigma' 'x84' 'dynamic' 'goicp'}
       m = mode{1};
       params.mode = m;
-      tic;
-      [tf iters] = icp(c1, c2_t, params);
-      elapsed = toc;
+      if strcmp(m, 'goicp')
+        [tf elapsed] = goicp(c1, c2_t);
+      else
+        tic;
+        [tf iters] = icp(c1, c2_t, params);
+        elapsed = toc;
+      end
       tf_log = se3log(tf);
-      results.(m){angle_i, axis_i, src_frame_i} = [iters, elapsed, norm(tf_log(1:3)), norm(tf_log(4:6))];
+      results.(m){angle_i, frame_pair_i} = [iters, elapsed, norm(tf_log(1:3)), norm(tf_log(4:6))];
     end
     try
       tic;
       [tf data] = hmrf_icp(c1, c2_t, params);
       elapsed = toc;
       tf_log = se3log(tf);
-      results.hmrf{angle_i, axis_i, src_frame_i} = [data.icp_iters, ...
+      results.hmrf{angle_i, frame_pair_i} = [data.icp_iters, ...
         elapsed, norm(tf_log(1:3)), norm(tf_log(4:6)), data.em_iters];
     catch ae
-      results.hmrf{angle_i, axis_i, src_frame_i} = nan;
+      results.hmrf{angle_i, frame_pair_i} = nan;
     end
   end
 end
