@@ -7,26 +7,26 @@ w = 640;
 
 factor = 5000;
 
-files = dir('~/tum_data/rgbd_dataset_freiburg1_desk/depth/*.png');
+files = dir('../data/rgbd_dataset_freiburg1_room/depth/*.png');
 n = length(files);
 
-points = zeros(h*w, n, 3);
+points = zeros(n, h*w, 3);
 for i = 1:n
   depth_image = imread([files(i).folder '/' files(i).name]);
   for v = 1:h
     for u = 1:w
       if depth_image(v, u)==0
-        points((v-1)*w+u, i,:) = [nan nan nan];
+        points(i, (v-1)*w+u, :) = [nan nan nan];
       else
         Z = double(depth_image(v, u)) / factor;
         X = (u - cx) * Z / fx;
         Y = (v - cy) * Z / fy;
-        points((v-1)*w+u, i,:) = [X Y Z];
+        points(i, (v-1)*w+u, :) = [X Y Z];
       end
     end
   end
 end
 
-save('../data/freiburg1_desk.mat', 'points', '-v7.3')
+save('../data/freiburg1_room.mat', 'points', '-v7.3')
 %cloud = pointCloud(points);
 %pcwrite(cloud, '/Users/john/arpg/ICP/data/freiburg1_desk.pcd', 'Encoding', 'binary');
