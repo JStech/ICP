@@ -74,11 +74,11 @@ for angle_i=1:length(angles)
     c1 = downsample(unproject(getcloud(ref_frame)), 640, 480, 2);
     origin = mean(c1, 'omitnan');
     origin(4) = 0;
-    c1 = c1 - origin;
+    c1_z = c1 - origin;
     c2 = downsample(unproject(getcloud(src_frame)), 640, 480, 2);
     true_tf = inv(pmats{ref_frame})*pmats{src_frame};
     c2_t = (true_tf*c2')' - origin;
-    ol = calculate_overlap(c1, c2_t);
+    ol = calculate_overlap(c1_z, c2_t);
 
     fprintf('%4d %4d %8.5f %8.5f %3d\n', ref_frame, src_frame, ol, angle, axis_i);
 
@@ -88,10 +88,10 @@ for angle_i=1:length(angles)
       m = mode{1};
       params.mode = m;
       if strcmp(m, 'goicp')
-        [tf elapsed] = goicp(c1, c2_t);
+        [tf elapsed] = goicp(c1_z, c2_t, params);
       else
         tic;
-        [tf iters] = icp(c1, c2_t, params);
+        [tf iters] = icp(c1_z, c2_t, params);
         elapsed = toc;
       end
       tf_log = se3log(tf);
@@ -99,7 +99,7 @@ for angle_i=1:length(angles)
     end
     try
       tic;
-      [tf data] = hmrf_icp(c1, c2_t, params);
+      [tf data] = hmrf_icp(c1_z, c2_t, params);
       elapsed = toc;
       tf_log = se3log(tf);
       results.hmrf{angle_i, frame_pair_i} = [data.icp_iters, ...

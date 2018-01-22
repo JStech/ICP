@@ -1,4 +1,5 @@
-function [tf, elapsed] = goicp(ref, src)
+function [tf, elapsed] = goicp(ref, src, params)
+  src = (params.t_init * src')';
   % write ref points to tmp_ref.txt
   tmp_ref = fopen('tmp_ref.txt', 'w');
   fprintf(tmp_ref, '%d\n', length(ref));
@@ -35,5 +36,6 @@ function [tf, elapsed] = goicp(ref, src)
   tf = eye(4);
   tf(1:3,1:3) = R;
   tf(1:3,4) = t;
+  tf = tf * params.t_init;
   delete tmp_*.txt
 end

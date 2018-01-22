@@ -1,5 +1,5 @@
-raw_poses = dlmread('../data/freiburg1_desk.poses', ' ', 3, 0);
-ts_file = fopen('../data/freiburg1_desk_depth_timestamps.csv');
+raw_poses = dlmread('../data/freiburg1_room.poses', ' ', 3, 0);
+ts_file = fopen('../data/freiburg1_room_depth_timestamps.csv');
 timestamps = textscan(ts_file, '%f %s', 'CommentStyle', '#');
 fclose(ts_file);
 timestamps = timestamps{1};

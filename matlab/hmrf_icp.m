@@ -124,9 +124,10 @@ function [z, theta, iters, data] = EM(y, z, max_iter, params, data)
     theta = M_step(z, y);
     z = E_step(y, z, theta, params);
     if params.make_animation
-      data.anim.zfields = cat(3, data.anim.zfields, z);
+      scale = size(data.anim.zfields, 1) / size(z, 1);
+      data.anim.zfields = cat(3, data.anim.zfields, repelem(z, scale, scale));
       data.anim.clouds = cat(3, data.anim.clouds, ...
-          make_colored_clouds(data.src, data.ref, z));
+          make_colored_clouds(data.src, data.ref, repelem(z, scale, scale)));
     end
     if all(z(:) .* z1(:) >= 0) || ...
       (iters > 1 && all(z(:) .* z2(:) >= 0))
