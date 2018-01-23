@@ -13,13 +13,13 @@ rotMinZ=-3.1416
 rotWidth=6.2832
 
 # Smallest translation value along dimension X of translation cube
-transMinX=-0.5
+transMinX=-1.5
 # Smallest translation value along dimension Y of translation cube
-transMinY=-0.5
+transMinY=-1.5
 # Smallest translation value along dimension Z of translation cube
-transMinZ=-0.5
+transMinZ=-1.5
 # Side length of each dimension of translation cube
-transWidth=1.0
+transWidth=3.0
 
 # Set to 0.0 for no trimming
 trimFraction=0.0

@@ -1,18 +1,25 @@
 function [tf, elapsed] = goicp(ref, src, params)
+  tf = eye(4); elapsed = 0;
   src = (params.t_init * src')';
   % write ref points to tmp_ref.txt
   tmp_ref = fopen('tmp_ref.txt', 'w');
-  fprintf(tmp_ref, '%d\n', length(ref));
+  fprintf(tmp_ref, '%d\n', sum(~isnan(ref(:,1))));
   for i=1:length(ref)
+    if isnan(ref(i, 1))
+      continue
+    end
     fprintf(tmp_ref, '%d %d %d\n', ref(i, 1), ref(i, 2), ref(i, 3));
   end
   fclose(tmp_ref);
 
   % write src points to tmp_src.txt in random order
   tmp_src = fopen('tmp_src.txt', 'w');
-  fprintf(tmp_src, '%d\n', length(src));
+  fprintf(tmp_src, '%d\n', sum(~isnan(src(:,1))));
   p = randperm(length(src));
   for i=1:length(src)
+    if isnan(src(p(i), 1))
+      continue
+    end
     fprintf(tmp_src, '%d %d %d\n', src(p(i), 1), src(p(i), 2), src(p(i), 3));
   end
   fclose(tmp_src);

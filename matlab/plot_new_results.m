@@ -44,72 +44,78 @@ close all
 
 subplot(2,3,1)
 hold on
-plot(res_desk_params(desk_overlap_sort,3), res_desk_hmrf(desk_overlap_sort,3), '-ko')
-plot(res_desk_params(desk_overlap_sort,3), res_desk_all(desk_overlap_sort,3), '-r.')
-plot(res_desk_params(desk_overlap_sort,3), res_desk_pct(desk_overlap_sort,3), '-g.')
-plot(res_desk_params(desk_overlap_sort,3), res_desk_sigma(desk_overlap_sort,3), '-b.')
-plot(res_desk_params(desk_overlap_sort,3), res_desk_x84(desk_overlap_sort,3), '-r+')
-plot(res_desk_params(desk_overlap_sort,3), res_desk_dynamic(desk_overlap_sort,3), '-g+')
-plot(res_desk_params(desk_overlap_sort,3), res_desk_goicp(desk_overlap_sort,3), '-b+')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_hmrf(desk_overlap_sort,3), 'ko')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_all(desk_overlap_sort,3), 'r.')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_pct(desk_overlap_sort,3), 'g.')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_sigma(desk_overlap_sort,3), 'b.')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_x84(desk_overlap_sort,3), 'r+')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_dynamic(desk_overlap_sort,3), 'g+')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_goicp(desk_overlap_sort,3), 'b+')
 legend('HMRF', 'All', 'Percent', 'Sigma', 'X84', 'Dynamic', 'GoICP')
 title('Desk sequence, translation error');
+%ylim([0, 1]);
 
 subplot(2,3,4)
 hold on
-plot(res_shark_params(shark_overlap_sort,3), res_shark_hmrf(shark_overlap_sort,3), '-ko')
-plot(res_shark_params(shark_overlap_sort,3), res_shark_all(shark_overlap_sort,3), '-r.')
-plot(res_shark_params(shark_overlap_sort,3), res_shark_pct(shark_overlap_sort,3), '-g.')
-plot(res_shark_params(shark_overlap_sort,3), res_shark_sigma(shark_overlap_sort,3), '-b.')
-plot(res_shark_params(shark_overlap_sort,3), res_shark_x84(shark_overlap_sort,3), '-r+')
-plot(res_shark_params(shark_overlap_sort,3), res_shark_dynamic(shark_overlap_sort,3), '-g+')
-plot(res_shark_params(shark_overlap_sort,3), res_shark_goicp(shark_overlap_sort,3), '-b+')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_hmrf(shark_overlap_sort,3), 'ko')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_all(shark_overlap_sort,3), 'r.')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_pct(shark_overlap_sort,3), 'g.')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_sigma(shark_overlap_sort,3), 'b.')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_x84(shark_overlap_sort,3), 'r+')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_dynamic(shark_overlap_sort,3), 'g+')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_goicp(shark_overlap_sort,3), 'b+')
 legend('HMRF', 'All', 'Percent', 'Sigma', 'X84', 'Dynamic', 'GoICP')
 title('Shark sequence, translation error');
+%ylim([0, 1]);
 
 subplot(2,3,2)
 hold on
-plot(res_desk_params(desk_overlap_sort,3), res_desk_hmrf(desk_overlap_sort,4), '-ko')
-plot(res_desk_params(desk_overlap_sort,3), res_desk_all(desk_overlap_sort,4), '-r.')
-plot(res_desk_params(desk_overlap_sort,3), res_desk_pct(desk_overlap_sort,4), '-g.')
-plot(res_desk_params(desk_overlap_sort,3), res_desk_sigma(desk_overlap_sort,4), '-b.')
-plot(res_desk_params(desk_overlap_sort,3), res_desk_x84(desk_overlap_sort,4), '-r+')
-plot(res_desk_params(desk_overlap_sort,3), res_desk_dynamic(desk_overlap_sort,4), '-g+')
-plot(res_desk_params(desk_overlap_sort,3), res_desk_goicp(desk_overlap_sort,4), '-b+')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_hmrf(desk_overlap_sort,4), 'ko')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_all(desk_overlap_sort,4), 'r.')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_pct(desk_overlap_sort,4), 'g.')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_sigma(desk_overlap_sort,4), 'b.')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_x84(desk_overlap_sort,4), 'r+')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_dynamic(desk_overlap_sort,4), 'g+')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_goicp(desk_overlap_sort,4), 'b+')
 legend('HMRF', 'All', 'Percent', 'Sigma', 'X84', 'Dynamic', 'GoICP')
 title('Desk sequence, rotation error');
+%ylim([0, 1]);
 
 subplot(2,3,5)
 hold on
-plot(res_shark_params(shark_overlap_sort,3), res_shark_hmrf(shark_overlap_sort,4), '-ko')
-plot(res_shark_params(shark_overlap_sort,3), res_shark_all(shark_overlap_sort,4), '-r.')
-plot(res_shark_params(shark_overlap_sort,3), res_shark_pct(shark_overlap_sort,4), '-g.')
-plot(res_shark_params(shark_overlap_sort,3), res_shark_sigma(shark_overlap_sort,4), '-b.')
-plot(res_shark_params(shark_overlap_sort,3), res_shark_x84(shark_overlap_sort,4), '-r+')
-plot(res_shark_params(shark_overlap_sort,3), res_shark_dynamic(shark_overlap_sort,4), '-g+')
-plot(res_shark_params(shark_overlap_sort,3), res_shark_goicp(shark_overlap_sort,4), '-b+')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_hmrf(shark_overlap_sort,4), 'ko')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_all(shark_overlap_sort,4), 'r.')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_pct(shark_overlap_sort,4), 'g.')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_sigma(shark_overlap_sort,4), 'b.')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_x84(shark_overlap_sort,4), 'r+')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_dynamic(shark_overlap_sort,4), 'g+')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_goicp(shark_overlap_sort,4), 'b+')
 legend('HMRF', 'All', 'Percent', 'Sigma', 'X84', 'Dynamic', 'GoICP')
 title('Shark sequence, rotation error');
+%ylim([0, 1]);
 
 subplot(2,3,3)
 hold on
-plot(res_desk_params(desk_overlap_sort,3), res_desk_hmrf(desk_overlap_sort,2), '-ko')
-plot(res_desk_params(desk_overlap_sort,3), res_desk_all(desk_overlap_sort,2), '-r.')
-plot(res_desk_params(desk_overlap_sort,3), res_desk_pct(desk_overlap_sort,2), '-g.')
-plot(res_desk_params(desk_overlap_sort,3), res_desk_sigma(desk_overlap_sort,2), '-b.')
-plot(res_desk_params(desk_overlap_sort,3), res_desk_x84(desk_overlap_sort,2), '-r+')
-plot(res_desk_params(desk_overlap_sort,3), res_desk_dynamic(desk_overlap_sort,2), '-g+')
-plot(res_desk_params(desk_overlap_sort,3), res_desk_goicp(desk_overlap_sort,2), '-b+')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_hmrf(desk_overlap_sort,2), 'ko')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_all(desk_overlap_sort,2), 'r.')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_pct(desk_overlap_sort,2), 'g.')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_sigma(desk_overlap_sort,2), 'b.')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_x84(desk_overlap_sort,2), 'r+')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_dynamic(desk_overlap_sort,2), 'g+')
+plot(res_desk_params(desk_overlap_sort,3), res_desk_goicp(desk_overlap_sort,2), 'b+')
 legend('HMRF', 'All', 'Percent', 'Sigma', 'X84', 'Dynamic', 'GoICP')
 title('Desk sequence, elapsed time');
+%ylim([0, 12]);
 
 subplot(2,3,6)
 hold on
-plot(res_shark_params(shark_overlap_sort,3), res_shark_hmrf(shark_overlap_sort,2), '-ko')
-plot(res_shark_params(shark_overlap_sort,3), res_shark_all(shark_overlap_sort,2), '-r.')
-plot(res_shark_params(shark_overlap_sort,3), res_shark_pct(shark_overlap_sort,2), '-g.')
-plot(res_shark_params(shark_overlap_sort,3), res_shark_sigma(shark_overlap_sort,2), '-b.')
-plot(res_shark_params(shark_overlap_sort,3), res_shark_x84(shark_overlap_sort,2), '-r+')
-plot(res_shark_params(shark_overlap_sort,3), res_shark_dynamic(shark_overlap_sort,2), '-g+')
-plot(res_shark_params(shark_overlap_sort,3), res_shark_goicp(shark_overlap_sort,2), '-b+')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_hmrf(shark_overlap_sort,2), 'ko')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_all(shark_overlap_sort,2), 'r.')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_pct(shark_overlap_sort,2), 'g.')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_sigma(shark_overlap_sort,2), 'b.')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_x84(shark_overlap_sort,2), 'r+')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_dynamic(shark_overlap_sort,2), 'g+')
+plot(res_shark_params(shark_overlap_sort,3), res_shark_goicp(shark_overlap_sort,2), 'b+')
 legend('HMRF', 'All', 'Percent', 'Sigma', 'X84', 'Dynamic', 'GoICP')
 title('Shark sequence, elapsed time');
+%ylim([0, 12]);
