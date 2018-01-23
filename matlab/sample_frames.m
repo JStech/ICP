@@ -1,5 +1,5 @@
 n = size(overlaps, 1);
-step = 6;
+step = 10;
 
 ols = [0 0 0];
 for i=1:step:n

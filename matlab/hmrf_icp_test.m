@@ -37,6 +37,9 @@ case 'shark'
 case 'desk'
   load_desk_data;
   load_desk_poses;
+case 'room'
+  load_room_data;
+  load_room_poses;
 end
 load(['../data/selected_' data '_frames.mat']);
 
