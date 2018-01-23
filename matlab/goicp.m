@@ -25,7 +25,7 @@ function [tf, elapsed] = goicp(ref, src, params)
   fclose(tmp_src);
 
   % run it
-  cmd = 'ulimit -t 150; ./GoICP tmp_ref.txt tmp_src.txt 1000 Go-ICP-config.txt tmp_output.txt';
+  cmd = 'timeout 150 ./GoICP tmp_ref.txt tmp_src.txt 1000 Go-ICP-config.txt tmp_output.txt';
   s = system(cmd);
   if s > 0
     tf = nan(4);
