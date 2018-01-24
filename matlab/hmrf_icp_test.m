@@ -1,12 +1,16 @@
-function [results] = hmrf_icp_test(data, angles)
+function [results] = hmrf_icp_test(data, modes, angles)
 
 switch nargin
 case 0
-  angles = [pi/30];
   data = 'shark';
+  modes = {'all' 'pct' 'sigma' 'x84' 'dynamic' 'goicp' 's4pcs'};
+  angles = [pi/30];
 case 1
+  modes = {'all' 'pct' 'sigma' 'x84' 'dynamic' 'goicp' 's4pcs'};
   angles = [pi/30];
 case 2
+  angles = [pi/30];
+case 3
 otherwise
   error('Too many arguments');
 end
@@ -87,29 +91,35 @@ for angle_i=1:length(angles)
 
     results.params{angle_i, frame_pair_i} = ...
         [ref_frame, src_frame, ol, angle, axis_i];
-    for mode = {'all' 'pct' 'sigma' 'x84' 'dynamic' 'goicp'}
+    for mode = modes
       m = mode{1};
       params.mode = m;
       if strcmp(m, 'goicp')
         [tf elapsed] = goicp(c1_z, c2_t, params);
+      elseif strcmp(m, 's4pcs')
+        [tf elapsed] = s4pcs(c1_z, c2_t, ol, params);
+      elseif strcmp(m, 'hmrf')
+        try
+          tic;
+          [tf data] = hmrf_icp(c1_z, c2_t, params);
+          elapsed = toc;
+          tf_log = se3log(tf);
+          results.hmrf{angle_i, frame_pair_i} = [data.icp_iters, ...
+            elapsed, norm(tf_log(1:3)), norm(tf_log(4:6)), data.em_iters];
+        catch ae
+          results.hmrf{angle_i, frame_pair_i} = nan;
+        end
       else
         tic;
         [tf iters] = icp(c1_z, c2_t, params);
         elapsed = toc;
       end
-      tf_log = se3log(tf);
-      results.(m){angle_i, frame_pair_i} = [iters, elapsed, norm(tf_log(1:3)), norm(tf_log(4:6))];
+      if ~strcmp(m, 'hmrf')
+        tf_log = se3log(tf);
+        results.(m){angle_i, frame_pair_i} = [iters, elapsed, norm(tf_log(1:3)), norm(tf_log(4:6))];
+      end
     end
-    try
-      tic;
-      [tf data] = hmrf_icp(c1_z, c2_t, params);
-      elapsed = toc;
-      tf_log = se3log(tf);
-      results.hmrf{angle_i, frame_pair_i} = [data.icp_iters, ...
-        elapsed, norm(tf_log(1:3)), norm(tf_log(4:6)), data.em_iters];
-    catch ae
-      results.hmrf{angle_i, frame_pair_i} = nan;
-    end
+    break;
   end
 end
 end

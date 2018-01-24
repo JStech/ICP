@@ -1,5 +1,5 @@
 function [tf, elapsed] = goicp(ref, src, params)
-  tf = eye(4); elapsed = 0;
+  tf = nan(4); elapsed = NaN;
   src = (params.t_init * src')';
   % write ref points to tmp_ref.txt
   tmp_ref = fopen('tmp_ref.txt', 'w');
@@ -26,7 +26,7 @@ function [tf, elapsed] = goicp(ref, src, params)
 
   % run it
   cmd = 'timeout 150 ./GoICP tmp_ref.txt tmp_src.txt 1000 Go-ICP-config.txt tmp_output.txt';
-  s = system(cmd);
+  [s, ~] = system(cmd);
   if s > 0
     tf = nan(4);
     elapsed = nan;
