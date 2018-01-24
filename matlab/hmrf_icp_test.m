@@ -96,8 +96,10 @@ for angle_i=1:length(angles)
       params.mode = m;
       if strcmp(m, 'goicp')
         [tf elapsed] = goicp(c1_z, c2_t, params);
+        iters = 0;
       elseif strcmp(m, 's4pcs')
         [tf elapsed] = s4pcs(c1_z, c2_t, ol, params);
+        iters = 0;
       elseif strcmp(m, 'hmrf')
         try
           tic;
@@ -119,7 +121,6 @@ for angle_i=1:length(angles)
         results.(m){angle_i, frame_pair_i} = [iters, elapsed, norm(tf_log(1:3)), norm(tf_log(4:6))];
       end
     end
-    break;
   end
 end
 end
