@@ -26,7 +26,11 @@ function [tf, elapsed] = goicp(ref, src, params)
 
   % run it
   cmd = 'timeout 150 ./GoICP tmp_ref.txt tmp_src.txt 1000 Go-ICP-config.txt tmp_output.txt';
-  [s, ~] = system(cmd);
+  try
+    [s, ~] = system(cmd);
+  catch ae
+    s = 1;
+  end
   if s > 0
     tf = nan(4);
     elapsed = nan;
