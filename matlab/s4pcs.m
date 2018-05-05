@@ -6,7 +6,7 @@ function [tf, elapsed] = s4pcs(ref, src, overlap, params)
   pcwrite(pointCloud(src(:,1:3)), 'tmp_src.ply', 'PLYFormat', 'ascii');
 
   % run it
-  cmd = sprintf('./Super4PCS -i tmp_ref.ply tmp_src.ply -o %f -n 200 -d 0.01 -t 150 -m tmp_mat.txt', overlap);
+  cmd = sprintf('timeout 120 ./Super4PCS -i tmp_ref.ply tmp_src.ply -o %f -n 200 -d 0.01 -t 120 -m tmp_mat.txt', overlap);
   tic
   [s, ~] = system(cmd);
   elapsed = toc;

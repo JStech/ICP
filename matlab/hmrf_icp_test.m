@@ -3,10 +3,10 @@ function [results] = hmrf_icp_test(data, modes, angles)
 switch nargin
 case 0
   data = 'shark';
-  modes = {'all' 'pct' 'sigma' 'x84' 'dynamic' 'goicp' 's4pcs'};
+  modes = {'all' 'pct' 'sigma' 'x84' 'dynamic' 'hmrf' 'goicp' 's4pcs'};
   angles = [pi/30];
 case 1
-  modes = {'all' 'pct' 'sigma' 'x84' 'dynamic' 'goicp' 's4pcs'};
+  modes = {'all' 'pct' 'sigma' 'x84' 'dynamic' 'hmrf' 'goicp' 's4pcs'};
   angles = [pi/30];
 case 2
   angles = [pi/30];
@@ -52,8 +52,9 @@ params.h = 240;
 params.w = 320;
 params.debug = 1;
 params.icp_iter_max = 50;
-params.em_iter_max_start = 600;
-params.em_iter_max = 20;
+params.pyramid_levels = 4;
+params.em_iter_max_start = 150;
+params.em_iter_max = 5;
 params.verbose = false;
 
 results.params = {};
