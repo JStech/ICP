@@ -75,6 +75,9 @@ p = pcplayer(zlim, xlim, ylim);
 p.Axes.View = [-126.7900  -15.2217];
 for i=1:size(anim.clouds, 3)
   view(p, anim.clouds(ds_fixed,[3 1 2],i), anim.clouds(ds_fixed,4:6,i));
+  if i==47
+    break
+  end
   imagesc(anim.zfields(:,:,i)');
   daspect([1 1 1]);
   if i==2
