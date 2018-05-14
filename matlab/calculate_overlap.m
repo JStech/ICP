@@ -1,4 +1,4 @@
-function [overlap_fraction overlap] = calculate_overlap(c1, c2)
+function [overlap_fraction overlap dist1 kdtree1] = calculate_overlap(c1, c2)
   if size(c1, 2) == 4
     c1 = c1(:,1:3)./c1(:,4);
   end
