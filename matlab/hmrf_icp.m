@@ -74,9 +74,17 @@ end
 
 function [z] = E_step(y, z, theta, params)
   mean_field = [z(2:end,:); zeros(1, params.h)] + [zeros(1, params.h); z(1:end-1,:)] + [z(:,2:end) zeros(params.w, 1)] + [zeros(params.w, 1) z(:,1:end-1)];
-  r_in = params.beta*mean_field - log(theta.in_std) - (y - theta.in_mean).^2/(2*theta.in_std.^2) + params.gamma;
+  r_in = params.beta*mean_field - 0.5*log(2*pi) - log(theta.in_std) - (y - theta.in_mean).^2/(2*theta.in_std.^2) + params.gamma;
+  % fill missing values using just the mean field
   r_in(isnan(r_in)) = params.beta*mean_field(isnan(r_in));
-  r_out = -params.beta*mean_field - log(theta.out_std) - (y - theta.out_mean).^2/(2*theta.out_std.^2) - params.gamma;
+  if strcmp(params.em_outlier_dist, 'normal')
+    r_out = -params.beta*mean_field - 0.5*log(2*pi) - log(theta.out_std) - (y - theta.out_mean).^2/(2*theta.out_std.^2) - params.gamma;
+  elseif strcmp(params.em_outlier_dist, 'logistic')
+    s = sqrt(3)/pi * theta.out_std;
+    r_out = -params.beta*mean_field - log(s) - (y - theta.out_mean)./s - 2*log(1 + exp(-(y - theta.out_mean)./s)) - params.gamma;
+  else
+    error('em_outlier_dist must be "normal" or "logistic"')
+  end
   r_out(isnan(r_out)) = params.beta*mean_field(isnan(r_out));
   r_min = min(r_in, r_out);
   z = 2*exp(r_in-r_min) ./ (exp(r_out-r_min) + exp(r_in-r_min)) - 1;

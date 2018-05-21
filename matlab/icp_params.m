@@ -8,6 +8,8 @@ classdef icp_params
     icp_iter_max = 100;
     em_iter_max_start = 1000;
     em_iter_max = 100;
+    % Outlier distribution: normal or logistic
+    em_outlier_dist = 'logistic';
     % ICP mode: all, pct, sigma, dynamic, x84
     mode = 'all';
     D = 1.;
