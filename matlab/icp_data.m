@@ -3,6 +3,8 @@ classdef icp_data
     anim;
     src;
     ref;
+    neighborhoods;
+    neighborhood_maps;
     em_iters;
     icp_iters;
   end
