@@ -114,13 +114,25 @@ function [z, theta, iters, data] = EM_pyramid(y, z, max_iter, params, data)
     end
   end
   for p=[params.pyramid_levels:-1:1]
+    data.pyramid_level = p;
     if strcmp(params.neighbor_structure, 'grid')
       params.w = size(zs{p}, 1);
       params.h = size(zs{p}, 2);
     end
     [zs{p} theta iters data] = EM(ys{p}, zs{p}, max_iter, params, data);
+
+    % expand field
     if p>1
-      zs{p-1} = repelem(zs{p}, 2, 2);
+      if strcmp(params.neighbor_structure, 'grid')
+        zs{p-1} = repelem(zs{p}, 2, 2);
+      else
+        s = data.neighborhood_maps{p-1};
+        n = size(data.neighborhoods{p-1}, 1);
+        not_s = 1:n;
+        not_s(s) = [];
+        zs{p-1}(s) = zs{p};
+        zs{p-1}(not_s) = data.neighborhoods{p-1}(not_s, s) * zs{p};
+      end
     end
   end
   z = zs{1};
@@ -132,7 +144,7 @@ function [z, theta, iters, data] = EM(y, z, max_iter, params, data)
     z2 = z1;
     z1 = z;
     theta = M_step(z, y);
-    z = E_step(y, z, theta, params);
+    z = E_step(y, z, theta, params, data);
     if params.make_animation
       scale = size(data.anim.zfields, 1) / size(z, 1);
       data.anim.zfields = cat(3, data.anim.zfields, repelem(z, scale, scale));
@@ -150,11 +162,11 @@ function [z, theta, iters, data] = EM(y, z, max_iter, params, data)
   data.em_iters = [data.em_iters, iters];
 end
 
-function [z] = E_step(y, z, theta, params)
+function [z] = E_step(y, z, theta, params, data)
   if strcmp('grid', params.neighbor_structure)
     mean_field = [z(2:end,:); zeros(1, params.h)] + [zeros(1, params.h); z(1:end-1,:)] + [z(:,2:end) zeros(params.w, 1)] + [zeros(params.w, 1) z(:,1:end-1)];
   else
-    mean_field = neighborhoods * z;
+    mean_field = data.neighborhoods{data.pyramid_level} * z;
   end
   r_in = params.beta*mean_field - 0.5*log(2*pi) - log(theta.in_std) - (y - theta.in_mean).^2/(2*theta.in_std.^2) + params.gamma;
   % fill missing values using just the mean field

@@ -22,18 +22,15 @@ function data = make_neighborhoods(params, data)
   for level=2:params.pyramid_levels
     n = size(hood, 1);
     next_sample = zeros(n, 1);
-    degree = sum(hood);
-    [~, max_degs] = sort(degree, 'descend');
-    i = 1;
-    disp(sprintf('sampling, %d', level))
+    disp(sprintf('sampling %d', level));
     while any(next_sample == 0)
-      if next_sample(max_degs(i)) == 0
-        next_sample(max_degs(i)) = 1;
-        next_sample(find(hood(max_degs(i), :))) = -1;
-      end
-      i = i + 1;
+      p = find(next_sample == 0);
+      s = randsample(p, ceil(length(p)/10));
+      next_sample(s) = 1;
+      [~, j] = find(hood(s, :));
+      next_sample(j) = -1;
     end
-    disp(sprintf('done sampling, %d', level))
+    disp(sprintf('done sampling %d', level));
 
     new_neighbors = find(next_sample > 0);
     data.neighborhood_maps{level-1} = new_neighbors;
