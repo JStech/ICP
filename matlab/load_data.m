@@ -1,5 +1,8 @@
 if strcmp('kitti', dataset)
-  getcloud = @(i) getkittidata(i, 0);
+  if 0 == exist('kitti_sequence')
+    kitti_sequence = 0;
+  end
+  getcloud = @(i) getkittidata(i, kitti_sequence);
 else
   switch dataset
   case 'desk'
