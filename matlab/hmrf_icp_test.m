@@ -4,12 +4,12 @@ switch nargin
 case 0
   data = 'shark';
   modes = {'all' 'pct' 'sigma' 'x84' 'dynamic' 'hmrf' 'goicp' 's4pcs'};
-  angles = [pi/30];
+  angles = [pi/30 pi/15 pi/10];
 case 1
   modes = {'all' 'pct' 'sigma' 'x84' 'dynamic' 'hmrf' 'goicp' 's4pcs'};
-  angles = [pi/30];
+  angles = [pi/30 pi/15 pi/10];
 case 2
-  angles = [pi/30];
+  angles = [pi/30 pi/15 pi/10];
 case 3
 otherwise
   error('Too many arguments');
@@ -34,17 +34,9 @@ axes = [0.7295   -0.4166    0.5425
         0.8934   -0.0745   -0.4431];
 
 fprintf('Loading clouds and poses\n')
-switch data
-case 'shark'
-  load_shark_data;
-  load_shark_poses;
-case 'desk'
-  load_desk_data;
-  load_desk_poses;
-case 'room'
-  load_room_data;
-  load_room_poses;
-end
+dataset = data;
+load_data;
+load_poses;
 load(['../data/selected_' data '_frames.mat']);
 
 params = icp_params;
@@ -86,7 +78,6 @@ for angle_i=1:length(angles)
     c2 = downsample(unproject(getcloud(src_frame)), 640, 480, 2);
     true_tf = inv(pmats{ref_frame})*pmats{src_frame};
     c2_t = (true_tf*c2')' - origin;
-    ol = calculate_overlap(c1_z, c2_t);
 
     fprintf('%4d %4d %8.5f %8.5f %3d\n', ref_frame, src_frame, ol, angle, axis_i);
 
@@ -95,10 +86,10 @@ for angle_i=1:length(angles)
     for mode = modes
       m = mode{1};
       params.mode = m;
-      if strcmp(m, 'goicp')
+      if strcmp(m, 'goicp') && angle_i==1
         [tf elapsed] = goicp(c1_z, c2_t, params);
         iters = 0;
-      elseif strcmp(m, 's4pcs')
+      elseif strcmp(m, 's4pcs') && angle_i==1
         [tf elapsed] = s4pcs(c1_z, c2_t, ol, params);
         iters = 0;
       elseif strcmp(m, 'hmrf')

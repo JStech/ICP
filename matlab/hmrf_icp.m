@@ -182,9 +182,9 @@ function [z] = E_step(y, z, theta, params, data)
   end
   r_out(isnan(r_out)) = params.beta*mean_field(isnan(r_out));
   r_min = min(r_in, r_out);
-  assert(all(~isnan(r_in)));
-  assert(all(~isnan(r_out)));
-  assert(all(~isnan(r_min)));
+  assert(all(~isnan(r_in(:))));
+  assert(all(~isnan(r_out(:))));
+  assert(all(~isnan(r_min(:))));
   z = 2*exp(r_in-r_min) ./ (exp(r_out-r_min) + exp(r_in-r_min)) - 1;
   assert(all(~isnan(z(:))));
 end
