@@ -1,4 +1,5 @@
 results_file = fopen(['../data/text_' data '_results.csv'], 'w');
+angle_i = 3;
 
 switch data
 case 'shark'
@@ -20,18 +21,18 @@ fprintf(results_file, ...
     's4pcs_time,s4pcs_t_err,s4pcs_r_err,'...
     'hmrf_time,hmrf_t_err,hmrf_r_err\n']);
 for i=1:length(r.params)
-  ref_frame = r.params{i}(1);
-  src_frame = r.params{i}(2);
-  overlap = r.params{i}(3);
-  all_time = r.all{i}(2); all_t_err = r.all{i}(3); all_r_err = r.all{i}(4);
-  pct_time = r.pct{i}(2); pct_t_err = r.pct{i}(3); pct_r_err = r.pct{i}(4);
-  sigma_time = r.sigma{i}(2); sigma_t_err = r.sigma{i}(3); sigma_r_err = r.sigma{i}(4);
-  x84_time = r.x84{i}(2); x84_t_err = r.x84{i}(3); x84_r_err = r.x84{i}(4);
-  dynamic_time = r.dynamic{i}(2); dynamic_t_err = r.dynamic{i}(3); dynamic_r_err = r.dynamic{i}(4);
-  goicp_time = r.goicp{i}(2); goicp_t_err = r.goicp{i}(3); goicp_r_err = r.goicp{i}(4);
-  s4pcs_time = r.s4pcs{i}(2); s4pcs_t_err = r.s4pcs{i}(3); s4pcs_r_err = r.s4pcs{i}(4);
+  ref_frame = r.params{angle_i,i}(1);
+  src_frame = r.params{angle_i,i}(2);
+  overlap = r.params{angle_i,i}(3);
+  all_time = r.all{angle_i,i}(2); all_t_err = r.all{angle_i,i}(3); all_r_err = r.all{angle_i,i}(4);
+  pct_time = r.pct{angle_i,i}(2); pct_t_err = r.pct{angle_i,i}(3); pct_r_err = r.pct{angle_i,i}(4);
+  sigma_time = r.sigma{angle_i,i}(2); sigma_t_err = r.sigma{angle_i,i}(3); sigma_r_err = r.sigma{angle_i,i}(4);
+  x84_time = r.x84{angle_i,i}(2); x84_t_err = r.x84{angle_i,i}(3); x84_r_err = r.x84{angle_i,i}(4);
+  dynamic_time = r.dynamic{angle_i,i}(2); dynamic_t_err = r.dynamic{angle_i,i}(3); dynamic_r_err = r.dynamic{angle_i,i}(4);
+  goicp_time = r.goicp{angle_i,i}(2); goicp_t_err = r.goicp{angle_i,i}(3); goicp_r_err = r.goicp{angle_i,i}(4);
+  s4pcs_time = r.s4pcs{angle_i,i}(2); s4pcs_t_err = r.s4pcs{angle_i,i}(3); s4pcs_r_err = r.s4pcs{angle_i,i}(4);
   try
-    hmrf_time = r.hmrf{i}(2); hmrf_t_err = r.hmrf{i}(3); hmrf_r_err = r.hmrf{i}(4);
+    hmrf_time = r.hmrf{angle_i,i}(2); hmrf_t_err = r.hmrf{angle_i,i}(3); hmrf_r_err = r.hmrf{angle_i,i}(4);
   catch ae
     hmrf_time = nan; hmrf_t_err = nan; hmrf_r_err = nan;
   end
