@@ -5,7 +5,9 @@
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <stdlib.h>
+#ifdef USE_OPENMP
 #include <omp.h>
+#endif
 #include <Eigen/Eigenvalues>
 #include <cmath>
 #include <algorithm>

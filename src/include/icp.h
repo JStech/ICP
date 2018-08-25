@@ -50,7 +50,7 @@ class ICP {
   void SetD(float);
 
   void Run();
-}
+};
 
 float ICP_hmrf(pcl::PointCloud<pcl::PointXYZ>::Ptr reference,
     pcl::PointCloud<pcl::PointXYZ>::Ptr source,
