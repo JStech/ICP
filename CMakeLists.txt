@@ -21,8 +21,8 @@ if(BUILD_ICP)
   find_package(CImg REQUIRED)
 endif()
 
-set(CMAKE_C_COMPILER clang CACHE STRING "C compiler" FORCE)
-set(CMAKE_CXX_COMPILER clang++ CACHE STRING "C++ compiler" FORCE)
+#set(CMAKE_C_COMPILER clang CACHE STRING "C compiler" FORCE)
+#set(CMAKE_CXX_COMPILER clang++ CACHE STRING "C++ compiler" FORCE)
 
 find_package(PCL REQUIRED)
 find_package(OpenMP QUIET)

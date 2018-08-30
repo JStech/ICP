@@ -15,6 +15,7 @@
 #ifdef PROFILE
 #include <iostream>
 #include <cassert>
+#include <chrono>
 #endif
 #define MAX_ITER 40
 
@@ -40,7 +41,6 @@ std::vector<T> flatten(const std::vector<std::vector<T>> &orig) {
 // return value at position k in list L
 float quickselect(std::vector<float> L, size_t k) {
   size_t n = L.size();
-  assert(0 <= k);
   assert(k < n);
   std::vector<float> lt_items;
   std::vector<float> gt_items;
