@@ -1,13 +1,11 @@
 results_file = fopen(['../data/text_' data '_results.csv'], 'w');
-angle_i = 3;
+angle_i = 1;
 
 switch data
 case 'shark'
   r = shark_results;
-case 'desk'
-  r = desk_results;
-case 'room'
-  r = room_results;
+case 'tum'
+  r = tum_results;
 end
 
 fprintf(results_file, ...

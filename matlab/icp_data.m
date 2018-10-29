@@ -8,5 +8,6 @@ classdef icp_data
     em_iters;
     icp_iters;
     pyramid_level;
+    z;
   end
 end

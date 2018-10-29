@@ -99,6 +99,7 @@ function [tf, data] = hmrf_icp(ref, src, params)
     end
   end
   data.icp_iters = icp_iter;
+  data.z = z;
 end
 
 function [z, theta, iters, data] = EM_pyramid(y, z, max_iter, params, data)
