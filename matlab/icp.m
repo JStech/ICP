@@ -62,6 +62,8 @@ function [tf, iter, all_matches] = icp(ref, src, params)
 
         matches = find(dist < Dmax);
         matches = [matches idx(matches)];
+      otherwise
+        error(['Bad mode ' params.mode])
     end
     all_matches{iter} = matches;
 
