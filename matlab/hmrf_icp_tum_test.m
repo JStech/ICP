@@ -71,7 +71,6 @@ for i_p = 1:size(pairs, 1)
     t_init(1:3,1:3) = aa2mat(axis, angle);
     params.t_init = t_init;
 
-    ol = pairs{i_p, 2};
     ref_frame = pairs{i_p, 3};
     src_frame = pairs{i_p, 4};
 
@@ -81,6 +80,7 @@ for i_p = 1:size(pairs, 1)
     c2 = unproject(squeeze(points(src_frame,:,:)));
     true_tf = inv(pmats{ref_frame})*pmats{src_frame};
     c2_t = (true_tf*c2')' - origin;
+    [ol, overlap] = calculate_overlap(c1_z, c2_t);
 
     fprintf('%4d %4d %8.5f %8.5f %3d %s\n', ref_frame, src_frame, ol, angle, axis_i, dataset);
 
@@ -89,24 +89,20 @@ for i_p = 1:size(pairs, 1)
     for mode = modes
       m = mode{1};
       params.mode = m;
-      if strcmp(m, 'goicp')
-        if angle_i==1
-          [tf elapsed] = goicp(c1_z, c2_t, params);
-          iters = 0;
-        end
-      elseif strcmp(m, 's4pcs')
-        if angle_i==1
-          [tf elapsed] = s4pcs(c1_z, c2_t, ol, params);
-          iters = 0;
-        end
+      if strcmp(m, 'goicp') && angle_i==1
+        [tf elapsed] = goicp(c1_z, c2_t, params);
+        iters = 0;
+      elseif strcmp(m, 's4pcs') && angle_i==1
+        [tf elapsed] = s4pcs(c1_z, c2_t, ol, params);
+        iters = 0;
       elseif strcmp(m, 'hmrf')
         try
           tic;
           [tf data] = hmrf_icp(c1_z, c2_t, params);
           elapsed = toc;
-          tf_log = se3log(tf);
-          results.hmrf{angle_i, i_p} = [data.icp_iters, ...
-            elapsed, norm(tf_log(1:3)), norm(tf_log(4:6)), data.em_iters];
+          rmse = calculate_rmse(c1_z, (tf * c2_t')', overlap);
+          results.hmrf{angle_i, frame_pair_i} = [data.icp_iters, ...
+            elapsed, rmse, data.em_iters];
         catch ae
           results.hmrf{angle_i, i_p} = nan;
         end
@@ -116,8 +112,8 @@ for i_p = 1:size(pairs, 1)
         elapsed = toc;
       end
       if ~strcmp(m, 'hmrf')
-        tf_log = se3log(tf);
-        results.(m){angle_i, i_p} = [iters, elapsed, norm(tf_log(1:3)), norm(tf_log(4:6))];
+        rmse = calculate_rmse(c1_z, (tf * c2_t')', overlap);
+        results.(m){angle_i, frame_pair_i} = [iters, elapsed, rmse];
       end
     end
   end

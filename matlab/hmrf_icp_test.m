@@ -67,7 +67,6 @@ for angle_i=1:length(angles)
     t_init(1:3,1:3) = aa2mat(axis, angle);
     params.t_init = t_init;
 
-    ol = selected(frame_pair_i, 1);
     ref_frame = selected(frame_pair_i, 2);
     src_frame = selected(frame_pair_i, 3);
 
@@ -78,6 +77,7 @@ for angle_i=1:length(angles)
     c2 = downsample(unproject(getcloud(src_frame)), 640, 480, 2);
     true_tf = inv(pmats{ref_frame})*pmats{src_frame};
     c2_t = (true_tf*c2')' - origin;
+    [ol, overlap] = calculate_overlap(c1_z, c2_t);
 
     fprintf('%4d %4d %8.5f %8.5f %3d\n', ref_frame, src_frame, ol, angle, axis_i);
 
@@ -97,9 +97,9 @@ for angle_i=1:length(angles)
           tic;
           [tf data] = hmrf_icp(c1_z, c2_t, params);
           elapsed = toc;
-          tf_log = se3log(tf);
+          rmse = calculate_rmse(c1_z, (tf * c2_t')', overlap);
           results.hmrf{angle_i, frame_pair_i} = [data.icp_iters, ...
-            elapsed, norm(tf_log(1:3)), norm(tf_log(4:6)), data.em_iters];
+            elapsed, rmse, data.em_iters];
         catch ae
           results.hmrf{angle_i, frame_pair_i} = nan;
         end
@@ -109,8 +109,8 @@ for angle_i=1:length(angles)
         elapsed = toc;
       end
       if ~strcmp(m, 'hmrf')
-        tf_log = se3log(tf);
-        results.(m){angle_i, frame_pair_i} = [iters, elapsed, norm(tf_log(1:3)), norm(tf_log(4:6))];
+        rmse = calculate_rmse(c1_z, (tf * c2_t')', overlap);
+        results.(m){angle_i, frame_pair_i} = [iters, elapsed, rmse];
       end
     end
   end

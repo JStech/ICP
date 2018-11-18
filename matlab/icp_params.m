@@ -9,7 +9,7 @@ classdef icp_params
     em_iter_max_start = 1000;
     em_iter_max = 100;
     % Outlier distribution: normal or logistic
-    em_outlier_dist = 'logistic';
+    em_outlier_dist = 'normal';
     % Neighbor structure: grid or unstructured
     neighbor_structure = 'grid';
     neighbor_sigma = 1e-1;
