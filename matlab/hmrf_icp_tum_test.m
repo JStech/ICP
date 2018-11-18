@@ -101,7 +101,7 @@ for i_p = 1:size(pairs, 1)
           [tf data] = hmrf_icp(c1_z, c2_t, params);
           elapsed = toc;
           rmse = calculate_rmse(c1_z, (tf * c2_t')', overlap);
-          results.hmrf{angle_i, frame_pair_i} = [data.icp_iters, ...
+          results.hmrf{angle_i, i_p} = [data.icp_iters, ...
             elapsed, rmse, data.em_iters];
         catch ae
           results.hmrf{angle_i, i_p} = nan;
@@ -113,7 +113,7 @@ for i_p = 1:size(pairs, 1)
       end
       if ~strcmp(m, 'hmrf')
         rmse = calculate_rmse(c1_z, (tf * c2_t')', overlap);
-        results.(m){angle_i, frame_pair_i} = [iters, elapsed, rmse];
+        results.(m){angle_i, i_p} = [iters, elapsed, rmse];
       end
     end
   end
