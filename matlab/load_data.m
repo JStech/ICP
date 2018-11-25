@@ -3,6 +3,7 @@ if strcmp('kitti', dataset)
     kitti_sequence = 0;
   end
   getcloud = @(i) getkittidata(i, kitti_sequence);
+  n_kitti_clouds = size(dir(sprintf('../data/dataset/sequences/%02d/velodyne/*.bin', kitti_sequence)), 1);
 else
   switch dataset
   case 'desk'
