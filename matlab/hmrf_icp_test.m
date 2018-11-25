@@ -86,12 +86,20 @@ for angle_i=1:length(angles)
     for mode = modes
       m = mode{1};
       params.mode = m;
-      if strcmp(m, 'goicp') && angle_i==1
-        [tf elapsed] = goicp(c1_z, c2_t, params);
-        iters = 0;
-      elseif strcmp(m, 's4pcs') && angle_i==1
-        [tf elapsed] = s4pcs(c1_z, c2_t, ol, params);
-        iters = 0;
+      if strcmp(m, 'goicp')
+        if angle_i==1
+          [tf elapsed] = goicp(c1_z, c2_t, params);
+          iters = 0;
+        else
+          tf = nan; elapsed = nan; iters = nan;
+        end
+      elseif strcmp(m, 's4pcs')
+        if angle_i==1
+          [tf elapsed] = s4pcs(c1_z, c2_t, ol, params);
+          iters = 0;
+        else
+          tf = nan; elapsed = nan; iters = nan;
+        end
       elseif strcmp(m, 'hmrf')
         try
           tic;
