@@ -1,0 +1,8 @@
+addpath('../matlab')
+load('demo_data.mat')
+disp('Demo loaded. Now run HMRF ICP as follows,')
+disp('    >>> [tf_1 data_1] = hmrf_icp(fixed_1, free_1, params);')
+disp('    >>> plot_icp(fixed_1, free_1, tf_1, data_1.z);')
+disp('    >>> params.neighbor_structure = ''unstructured'';')
+disp('    >>> [tf_2 data_2] = hmrf_icp(fixed_2, free_2, params);')
+disp('    >>> plot_icp(fixed_2, free_2, tf_2, data_2.z);')
